@@ -1,0 +1,113 @@
+.course-features-section {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 40px 20px;
+}
+
+.course-features-section .container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.course-features-section h1 {
+    text-align: center;
+    font-size: 2.5rem;
+    color: #1a1a1a;
+    margin-bottom: 50px;
+    font-weight: 600;
+}
+
+.features-card {
+    background: white;
+    border-radius: 20px;
+    padding: 50px 40px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 40px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.icon-wrapper {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border: 2px solid #7ed957;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(126, 217, 87, 0.1);
+}
+
+.icon-wrapper i {
+    font-size: 24px;
+    color: #7ed957;
+}
+
+.feature-content h3 {
+    font-size: 1.5rem;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.feature-content p {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .course-features-section h1 {
+        font-size: 2rem;
+        margin-bottom: 30px;
+    }
+
+    .features-card {
+        padding: 30px 20px;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .feature-item {
+        gap: 15px;
+    }
+
+    .icon-wrapper {
+        width: 50px;
+        height: 50px;
+    }
+
+    .icon-wrapper i {
+        font-size: 20px;
+    }
+
+    .feature-content h3 {
+        font-size: 1.25rem;
+    }
+
+    .feature-content p {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .course-features-section {
+        padding: 20px 10px;
+    }
+
+    .course-features-section h1 {
+        font-size: 1.5rem;
+    }
+}

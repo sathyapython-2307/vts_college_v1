@@ -1,0 +1,1120 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/course_features.css' %}">
+<style>
+    .course-details-hero {
+        background-color: rgb(171, 255, 233);
+        padding: 3rem 0;
+    }
+    
+    .course-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+    
+    .instructor-info {
+        margin-top: 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .instructor-images {
+        position: relative;
+        width: 90px;
+        height: 50px;
+    }
+    
+    
+    .instructor-image-wrapper {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .instructor-image-wrapper:first-child {
+        left: 0;
+    }
+    
+    .instructor-image-wrapper:last-child {
+        left: 30px;
+        z-index: 2;
+    }
+    
+    .instructor-image-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border: 3px solid white;
+        border-radius: 50%;
+    }
+    
+    .instructor-text {
+        margin-left: 1rem;
+        font-size: 16px;
+        line-height: 1;
+    }
+    
+    .instructor-text .text-muted {
+        color: #666 !important;
+    }
+    
+    .instructor-names {
+        font-weight: 500;
+        display: inline;
+        margin-left: 4px;
+    }
+    
+    .original-price {
+        color: #6c757d;
+        font-size: 1.25rem;
+        text-decoration-line: line-through;
+        margin-right: 0.75rem;
+
+    }
+    
+    .discounted-price {
+        color: #28a745;
+        font-size: 1.75rem;
+        font-weight: bold;
+    }
+    
+    .course-content-description {
+        line-height: 1.8;
+    }
+    
+    .btn-primary {
+        background-color: #28a745;
+        border-color: #28a745;
+        padding: 0.75rem 2rem;
+        font-size: 1.125rem;
+        border-radius: 0.5rem;
+    }
+    
+    .btn-primary:hover {
+        background-color: #218838;
+        border-color: #218838;
+    }
+
+    
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Course Details Section -->
+<section class="course-details-hero py-5" style="background-color: #87e3d1;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="course-title" style="text-align: left; color: #24b10b;">{{ course.name }}</h1>
+                <p class="course-description" style="font-size: large; font-weight: bolder;">{{ course.description }}</p>
+                <div class="instructor-info d-flex align-items-center mt-4">
+                    <div class="instructor-images position-relative" style="width: 90px;">
+                        {# Prefer manual per-course instructors (local_instructors). Fall back to global CourseInstructor if none. #}
+                        {% if local_instructors and local_instructors.exists %}
+                            {% for li in local_instructors %}
+                                    <div class="instructor-image-wrapper position-absolute" 
+                                         style="width: 50px; height: 50px; {% if forloop.first %}left: 0;{% else %}left: 30px;{% endif %} {% if not forloop.first %}z-index: 2;{% endif %}">
+                                        <img src="{% if li.image %}{{ li.image.url }}{% else %}{% static 'images/default-profile.png' %}{% endif %}" 
+                                             alt="{{ li.name }}"
+                                             class="rounded-circle border border-3 border-white"
+                                             style="width: 100%; height: 100%; object-fit: cover;">
+                                    </div>
+                            {% endfor %}
+                        {% else %}
+                                {% for course_instructor in course_instructors %}
+                                    <div class="instructor-image-wrapper position-absolute" 
+                                         style="width: 50px; height: 50px; {% if forloop.first %}left: 0;{% else %}left: 30px;{% endif %} {% if not forloop.first %}z-index: 2;{% endif %}">
+                                        <img src="{% if course_instructor.instructor.image %}{{ course_instructor.instructor.image.url }}{% else %}{% static 'images/default-profile.png' %}{% endif %}" 
+                                             alt="{{ course_instructor.instructor.name }}"
+                                             class="rounded-circle border border-3 border-white"
+                                             style="width: 100%; height: 100%; object-fit: cover;">
+                                    </div>
+                                {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="instructor-text ms-3 mt-5" style="font-size: 20px;">
+                        <span class="text-bold">Instructor: </span>
+                        <span class="instructor-names" style="font-weight: 500;">
+                            {% if local_instructors and local_instructors.exists %}
+                                {% for li in local_instructors %}
+                                    {{ li.name }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                {% with instructors=course_instructors %}
+                                    {% if instructors.count > 0 %}
+                                        {{ instructors.0.instructor.name }}{% if instructors.count > 1 %}, {{ instructors.1.instructor.name }}{% endif %}
+                                    {% endif %}
+                                {% endwith %}
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <div class="price-section mt-4" style="position: relative; top: 20px;">
+                    <div class="d-flex align-items-center">
+                        {% if course.original_price %}
+                            <span class="original-price text-decoration-line-through me-3">₹{{ course.original_price }}</span>
+                        {% endif %}
+                        {% if course.discounted_price %}
+                            <span class="discounted-price fs-3 fw-bold">₹{{ course.discounted_price }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="action-section mt-4">
+                    {% if has_access %}
+                        <a href="#schedule-accordion" class="btn btn-success btn-lg start-learning-btn" style="background-color: #1e7e34; border: none;" onclick="document.querySelector('#schedule-accordion').scrollIntoView({ behavior: 'smooth' }); return false;">Start Learning</a>
+                    {% else %}
+                            {% if request.user.is_authenticated %}
+                                <a href="{% url 'course_checkout' course.slug %}" class="btn btn-primary btn-lg" style="background-color: #24b10b; border: none;">Buy Now</a>
+                            {% else %}
+                                <a href="{% url 'signup' %}?next={% url 'course_detail' slug=course.slug %}" class="btn btn-primary btn-lg" style="background-color: #24b10b; border: none;">Buy Now</a>
+                            {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <!-- column intentionally left blank to preserve layout -->
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Course Features Section -->
+<section class="course-features-section">
+    <div class="container">
+        <h1>{{ course.name }} Features</h1>
+        <div class="features-card">
+            <div class="features-grid">
+                {% for feature in course_features %}
+                <div class="feature-item">
+                    <div class="icon-wrapper">
+                        <i class="{{ feature.icon }}"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h3>{{ feature.title }}</h3>
+                        <p>{{ feature.description }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+<!-- couse overview section -->
+<div class="course-overview-section">
+<div class="tabs">
+        <button class="tab active">Course Overview</button>
+        <button class="tab">Reviews</button>
+    </div>
+
+    <div class="content-area">
+        <div class="skills-section">
+            <h2>Skills you'll gain</h2>
+            <div class="skill-tags">
+                {% for skill in course_skills %}
+                    <span class="skill-tag">{{ skill.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tools-section">
+            <h2>Tools You Learn</h2>
+            <div class="tools-list">
+                {% for tool in course_tools %}
+                    <div class="tool-item">
+                        {% if tool.icon %}
+                            <img src="{{ tool.icon.url }}" alt="{{ tool.name }}" class="tool-icon">
+                        {% else %}
+                            <i class="fas fa-tools tool-icon"></i>
+                        {% endif %}
+                        <span class="tool-name">{{ tool.name }}</span>
+                    </div>
+                    {% if not forloop.last %}
+                        <span class="separator">,</span>
+                    {% else %}
+                        <span class="separator">.</span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        {% for overview in course_overviews %}
+        <div class="details-section">
+            <h2>{{ overview.title }}</h2>
+            <p class="description">
+                {{ overview.description }}
+            </p>
+            {% if overview.image %}
+                <img src="{{ overview.image.url }}" alt="{{ overview.title }}" class="overview-image">
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</div>
+
+    {% if brochure %}
+    <div class="download-brochure-section">
+        <h2 class="header-title">{{ brochure.title }}</h2>
+        <button class="download-btn" onclick="openBrochureModal()">Download Brochure</button>
+    </div>
+
+    <!-- Brochure Download Modal -->
+    <div id="brochureModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Download Course Brochure</h2>
+            <form id="brochureForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="userName">Full Name*</label>
+                    <input type="text" id="userName" name="user_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">Email Address*</label>
+                    <input type="email" id="userEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="userPhone">Phone Number*</label>
+                    <input type="tel" id="userPhone" name="phone" required>
+                </div>
+                <button type="submit" class="submit-btn">Download Now</button>
+            </form>
+        </div>
+    </div>
+
+    <style>
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 30px;
+        border: 1px solid #888;
+        width: 90%;
+        max-width: 500px;
+        border-radius: 8px;
+        position: relative;
+    }
+
+    .close {
+        position: absolute;
+        right: 20px;
+        top: 15px;
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover {
+        color: #000;
+    }
+
+    .modal h2 {
+        margin-bottom: 20px;
+        color: #333;
+        font-size: 24px;
+        text-align: center;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #555;
+        font-weight: 500;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 16px;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 12px;
+        background-color: #52c41a;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .submit-btn:hover {
+        background-color: #45a81a;
+    }
+
+    @media (max-width: 768px) {
+        .modal-content {
+            margin: 20% auto;
+            padding: 20px;
+        }
+    }
+    </style>
+
+    <script>
+    function openBrochureModal() {
+        document.getElementById('brochureModal').style.display = 'block';
+    }
+
+    document.querySelector('.close').onclick = function() {
+        document.getElementById('brochureModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        if (event.target == document.getElementById('brochureModal')) {
+            document.getElementById('brochureModal').style.display = 'none';
+        }
+    }
+
+    // Create notification div if it doesn't exist
+    let notificationDiv = document.getElementById('notification');
+    if (!notificationDiv) {
+        notificationDiv = document.createElement('div');
+        notificationDiv.id = 'notification';
+        document.body.appendChild(notificationDiv);
+    }
+
+    // Add notification styles
+    const style = document.createElement('style');
+    style.textContent = `
+        #notification {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background-color: #52c41a;
+            color: white;
+            border-radius: 4px;
+            font-size: 16px;
+            z-index: 10000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    document.getElementById('brochureForm').onsubmit = function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        
+        fetch("{% url 'download_brochure' course_slug=course.slug %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            // Create a URL for the blob
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "{{ course.name }}_brochure.pdf";
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            // Close modal after successful download
+            document.getElementById('brochureModal').style.display = 'none';
+
+            // Show success notification
+            notificationDiv.textContent = 'Brochure downloaded successfully!';
+            notificationDiv.style.display = 'block';
+            
+            // Hide notification after 3 seconds
+            setTimeout(() => {
+                notificationDiv.style.display = 'none';
+            }, 3000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to download brochure. Please try again.');
+        });
+    };
+    </script>
+    {% endif %}
+
+<!-- Course Schedule / Curriculum (admin-manageable) -->
+{% comment %} Render course schedule days and items. Admins can add CourseScheduleDay and CourseScheduleItem. {% endcomment %}
+{% if course.schedule_days.all %}
+<div class="course-schedule-wrapper" style="max-width:1200px;margin:24px auto;padding:10px;">
+    <div id="schedule-accordion" class="schedule-accordion">
+        {% for day in course.schedule_days.all|dictsort:"order" %}
+            {% with is_first_day=forloop.first %}
+            {% if day.is_active %}
+            <div class="schedule-day">
+                <button class="schedule-day-toggle" aria-expanded="false">
+                    <span class="day-title">{{ day.title }}</span>
+                    <span class="day-icon">▾</span>
+                </button>
+                <div class="schedule-day-panel">
+                    <ul class="schedule-items-list">
+                        {% for item in day.items.all|dictsort:"order" %}
+                            {% if item.is_active %}
+                                <li class="schedule-item video-item" data-video-url="{% if item.video_url %}{{ item.video_url }}{% elif item.video_file %}{{ item.video_file.url }}{% endif %}" data-video-type="{% if item.video_url %}external{% elif item.video_file %}file{% else %}none{% endif %}" data-allowed="{% if is_first_day or has_access %}true{% else %}false{% endif %}">
+                                    <div class="thumb-wrapper">
+                                        {% if item.thumbnail %}
+                                            <img src="{{ item.thumbnail.url }}" alt="{{ item.title }} thumbnail" class="video-thumb" />
+                                        {% else %}
+                                            <div class="video-thumb placeholder">📹</div>
+                                        {% endif %}
+                                        </div>
+                                    <div class="item-content">
+                                        <div>
+                                            <div class="item-title">{{ item.title }} <span class="video-duration">{% if item.duration %}• {{ item.duration }}{% endif %}</span></div>
+                                            {% if item.description %}
+                                                <div class="item-desc">{{ item.description }}</div>
+                                            {% endif %}
+                                        </div>
+                                        {# Render controls depending on day and purchase status #}
+                                        {% if is_first_day or has_access %}
+                                            {# Show a prominent Play button for allowed users #}
+                                            <a href="#" class="play-overlay btn btn-sm btn-success" role="button" aria-label="Play {{ item.title }}">Play</a>
+                                        {% else %}
+                                            {# Non-paid users see Buy Now overlay. If anonymous, send them to signup first. #}
+                                            {% if request.user.is_authenticated %}
+                                                <a class="buy-overlay btn btn-sm btn-primary" href="{% url 'course_checkout' course.slug %}">Buy Now</a>
+                                            {% else %}
+                                                <a class="buy-overlay btn btn-sm btn-primary" href="{% url 'signup' %}?next={% url 'course_detail' slug=course.slug %}">Buy Now</a>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<style>
+/* Schedule accordion styles (responsive) */
+.schedule-day { border-radius:8px; margin-bottom:12px; overflow:hidden; border:1px solid rgba(0,0,0,0.08); background:#fff; }
+.schedule-day-toggle { width:100%; text-align:left; background:transparent; border:none; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; font-size:18px; cursor:pointer; }
+.schedule-day-toggle .day-title { font-weight:600; }
+.schedule-day-toggle .day-icon { transition: transform .25s ease; font-size:20px; color:#444; }
+.schedule-day-panel { max-height:0; overflow:hidden; transition: max-height .28s ease; background:#fff; border-top:1px solid rgba(0,0,0,0.04); }
+.schedule-day-panel.open { max-height:1000px; }
+.schedule-items-list { list-style:none; margin:0; padding:10px 18px; }
+.schedule-item { display:flex; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid rgba(0,0,0,0.04); position:relative; }
+.schedule-item:last-child { border-bottom:none; }
+.thumb-wrapper { position:relative; width:24px; min-width:24px; height:24px; flex-shrink:0; }
+.video-thumb { width:24px; height:24px; object-fit:cover; border-radius:4px; }
+.video-thumb.placeholder { background:#f5f5f5; display:flex; align-items:center; justify-content:center; font-size:12px; border-radius:4px; }
+.item-content { display: flex; flex: 1; justify-content: space-between; align-items: center; }
+.schedule-item .play-overlay {
+    background: #52c41a;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    margin-left: 12px;
+    white-space: nowrap;
+}
+.schedule-item .play-overlay:hover { background: #45a81a; }
+.item-title { font-weight:600; font-size:16px; }
+.item-desc { color:#666; margin-top:4px; font-size:13px; }
+
+/* Buy overlay button shown to non-paid users */
+.schedule-item .buy-overlay {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding:6px 10px;
+    background:#52c41a;
+    color:#fff;
+    border-radius:6px;
+    font-size:13px;
+    text-decoration:none;
+    display:inline-block;
+}
+
+@media (max-width:768px) {
+    .schedule-day-toggle { padding:12px 14px; font-size:16px; }
+    .schedule-items-list { padding:8px 14px; }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const toggles = document.querySelectorAll('.schedule-day-toggle');
+    toggles.forEach(btn => {
+        btn.addEventListener('click', function(){
+            const panel = this.nextElementSibling;
+            const icon = this.querySelector('.day-icon');
+            const isOpen = panel.classList.contains('open');
+            if (isOpen) {
+                panel.classList.remove('open');
+                icon.style.transform = 'rotate(0deg)';
+                this.setAttribute('aria-expanded','false');
+            } else {
+                panel.classList.add('open');
+                icon.style.transform = 'rotate(180deg)';
+                this.setAttribute('aria-expanded','true');
+            }
+        });
+    });
+    // Video modal behavior
+    function isYouTubeUrl(url){
+        return /youtu(?:\.be|be\.com)\//.test(url);
+    }
+
+    function youTubeEmbed(url){
+        // extract id
+        const m = url.match(/(?:youtu\.be\/|v=)([A-Za-z0-9_-]{6,})/);
+        if(m && m[1]) return 'https://www.youtube.com/embed/' + m[1] + '?autoplay=1';
+        return url;
+    }
+
+    // Create modal container
+    const modal = document.createElement('div');
+    modal.className = 'video-modal';
+    modal.innerHTML = `
+        <div class="video-backdrop"></div>
+        <div class="video-inner">
+            <button class="video-close" aria-label="Close">✕</button>
+            <div class="video-container"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    function openVideo(url, type){
+        const container = modal.querySelector('.video-container');
+        container.innerHTML = '';
+        if(!url) return;
+        if(type === 'external' && isYouTubeUrl(url)){
+            const iframe = document.createElement('iframe');
+            iframe.src = youTubeEmbed(url);
+            iframe.width = '100%';
+            iframe.height = '100%';
+            iframe.setAttribute('allow','autoplay; encrypted-media');
+            iframe.setAttribute('frameborder','0');
+            container.appendChild(iframe);
+        } else if(type === 'file'){
+            const video = document.createElement('video');
+            video.controls = true;
+            video.autoplay = true;
+            video.style.width = '100%';
+            const src = document.createElement('source');
+            src.src = url;
+            container.appendChild(video);
+            video.appendChild(src);
+        } else {
+            // fallback: open url in new tab
+            window.open(url, '_blank');
+            return;
+        }
+        modal.classList.add('open');
+    }
+
+    modal.addEventListener('click', function(e){
+        if(e.target.classList.contains('video-backdrop') || e.target.classList.contains('video-close')){
+            modal.classList.remove('open');
+            const container = modal.querySelector('.video-container');
+            container.innerHTML = '';
+        }
+    });
+
+    // Wire up play buttons
+    const videoItems = document.querySelectorAll('.video-item');
+    videoItems.forEach(li => {
+        const btn = li.querySelector('.play-overlay');
+        const buyLink = li.querySelector('.buy-overlay');
+        const videoUrl = li.getAttribute('data-video-url');
+        const videoType = li.getAttribute('data-video-type');
+        const allowed = li.getAttribute('data-allowed') === 'true';
+
+        if (btn) {
+            btn.addEventListener('click', function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                if(!allowed) {
+                    // redirect non-paid users to checkout if somehow Play is shown
+                    if (buyLink) window.location.href = buyLink.href;
+                    return;
+                }
+                if(!videoUrl){
+                    alert('No video available');
+                    return;
+                }
+                openVideo(videoUrl, videoType);
+            });
+        }
+
+        // also open when clicking the whole list item, but only if allowed
+        li.addEventListener('click', function(e){
+            // if click originated on a buy button or play button, let those handlers run
+            if (e.target.closest('.buy-overlay') || e.target.closest('.play-overlay')) return;
+            if(!allowed) {
+                // non-paid users clicking the item should be sent to checkout
+                if (buyLink) window.location.href = buyLink.href;
+                return;
+            }
+            if(!videoUrl) return;
+            openVideo(videoUrl, videoType);
+        });
+    });
+
+});
+</script>
+
+<style>
+/* Video modal styles */
+.video-modal { position:fixed; inset:0; display:none; z-index:2000; }
+.video-modal.open { display:block; }
+.video-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.6); }
+.video-inner { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); width:80%; max-width:900px; height:56vw; max-height:560px; background:#000; border-radius:8px; overflow:hidden; z-index:2001; }
+.video-close { position:absolute; right:8px; top:8px; z-index:2002; background:rgba(255,255,255,0.08); border:none; color:#fff; font-size:20px; padding:6px 10px; cursor:pointer; }
+.video-container { width:100%; height:100%; }
+.thumb-wrapper { position:relative; width:24px; min-width:24px; height:24px; flex-shrink:0; }
+.video-thumb { width:24px; height:24px; object-fit:cover; border-radius:4px; }
+.video-thumb.placeholder { background:#eee; display:flex; align-items:center; justify-content:center; font-size:12px; border-radius:4px; }
+.play-overlay { 
+    position: absolute;
+    right: 16px; 
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.video-duration { color:#777; font-weight:400; font-size:13px; margin-left:8px; }
+</style>
+
+</script>
+
+<style>
+    .course-features-section {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 40px 20px;
+    background-color: white;
+}
+
+.course-features-section .container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.course-features-section h1 {
+    text-align: center;
+    font-size: 2.5rem;
+    color: #1a1a1a;
+    margin-bottom: 50px;
+    font-weight: 600;
+}
+
+.features-card {
+    background: white;
+    border-radius: 20px;
+    padding: 50px 40px;
+    
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 40px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.icon-wrapper {
+    flex-shrink: 0;
+    width: 60px;
+    height: 60px;
+    border: 2px solid #7ed957;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(126, 217, 87, 0.1);
+}
+
+.icon-wrapper i {
+    font-size: 24px;
+    color: #7ed957;
+}
+
+.feature-content h3 {
+    font-size: 1.5rem;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.feature-content p {
+    font-size: 1rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .course-features-section h1 {
+        font-size: 2rem;
+        margin-bottom: 30px;
+    }
+
+    .features-card {
+        padding: 30px 20px;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .feature-item {
+        gap: 15px;
+    }
+
+    .icon-wrapper {
+        width: 50px;
+        height: 50px;
+    }
+
+    .icon-wrapper i {
+        font-size: 20px;
+    }
+
+    .feature-content h3 {
+        font-size: 1.25rem;
+    }
+
+    .feature-content p {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .course-features-section {
+        padding: 20px 10px;
+    }
+
+    .course-features-section h1 {
+        font-size: 1.5rem;
+    }
+}
+
+/* course over view section */
+     .course-overview-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #e8f5e9;
+            border-radius: 10px;
+            padding: 0;
+            margin-top: 25px;
+        }
+
+        .course-overview-section .tabs {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            background-color: #d4edda;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .course-overview-section .tab {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: white;
+            color: #333;
+        }
+
+        .course-overview-section .tab.active {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .course-overview-section .content-area {
+            padding: 30px;
+            background-color: white;
+        }
+
+        .course-overview-section h2 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+            font-weight: 700;
+        }
+
+        .course-overview-section .skills-section {
+            margin-bottom: 35px;
+        }
+
+        .course-overview-section .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .course-overview-section .skill-tag {
+            background-color: #d1ebe5;
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1a1a1a;
+            border: 1px solid #b8dbd3;
+        }
+
+        .course-overview-section .tools-section {
+            margin-bottom: 35px;
+        }
+
+        .course-overview-section .tools-list {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .course-overview-section .tool-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .course-overview-section .tool-icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            vertical-align: middle;
+        }
+        
+        .course-overview-section .tool-icon.fas {
+            font-size: 20px;
+            color: #4caf50;
+        }
+
+        .course-overview-section .tool-name {
+            color: #1a1a1a;
+            font-weight: 400;
+        }
+
+        .course-overview-section .separator {
+            color: #333;
+            margin: 0 2px;
+        }
+
+        .course-overview-section .details-section {
+            margin-bottom: 30px;
+        }
+
+        .course-overview-section .details-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .course-overview-section .description {
+            font-size: 15px;
+            line-height: 1.7;
+            color: #1a1a1a;
+            text-align: left;
+        }
+
+        @media (max-width: 768px) {
+            .course-overview-section .tabs {
+                padding: 12px 15px;
+            }
+
+            .course-overview-section .content-area {
+                padding: 20px;
+            }
+
+            .course-overview-section .tab {
+                padding: 8px 20px;
+                font-size: 15px;
+            }
+
+            .course-overview-section h2 {
+                font-size: 20px;
+            }
+
+            .course-overview-section .tools-list {
+                font-size: 15px;
+            }
+
+            .course-overview-section .description {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .course-overview-section .tabs {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .course-overview-section .tab {
+                width: 100%;
+                text-align: center;
+            }
+
+            .course-overview-section .content-area {
+                padding: 15px;
+            }
+
+            .course-overview-section h2 {
+                font-size: 18px;
+            }
+
+            .course-overview-section .skill-tag {
+                font-size: 12px;
+                padding: 7px 14px;
+            }
+
+            .course-overview-section .tool-icon {
+                width: 18px;
+                height: 18px;
+            }
+
+            .course-overview-section .tools-list {
+                font-size: 14px;
+            }
+        }
+
+        /* download brochure section */
+ .download-brochure-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            flex-wrap: wrap;
+            gap: 15px;
+            width: 65%;
+            margin: auto;
+            margin-bottom: 25px;
+        }
+
+        .download-brochure-section .header-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0;
+        }
+
+        .download-brochure-section .download-btn {
+            background-color: #52c41a;
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            white-space: nowrap;
+            text-decoration: none;
+        }
+
+        .download-brochure-section .download-btn:hover {
+            background-color: #45a81a;
+            transform: translateY(-1px);
+        }
+
+        .download-brochure-section .download-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .download-brochure-section {
+                padding: 15px 25px;
+            }
+
+            .download-brochure-section .header-title {
+                font-size: 24px;
+            }
+
+            .download-brochure-section .download-btn {
+                padding: 10px 24px;
+                font-size: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .download-brochure-section {
+                padding: 15px 20px;
+                justify-content: center;
+                text-align: center;
+            }
+
+            .download-brochure-section .header-title {
+                font-size: 22px;
+                width: 100%;
+            }
+
+            .download-brochure-section .download-btn {
+                width: 100%;
+                padding: 12px 20px;
+            }
+        }
+ 
+</style>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+ <section class="about-section" {% if about_page and about_page.background_color or about_page and about_page.text_color %}style="{% if about_page.background_color %}background:{{ about_page.background_color }};{% endif %}{% if about_page.text_color %}color:{{ about_page.text_color }};{% endif %}"{% endif %}>
+        <div class="container">
+            <div class="row">
+                <div class="col-12">
+                    <h1 class="about-heading" {% if about_page and about_page.text_font_size %}style="font-size:{{ about_page.text_font_size }};{% if about_page.text_color %}color:{{ about_page.text_color }};{% endif %}"{% elif about_page and about_page.text_color %}style="color:{{ about_page.text_color }};"{% endif %}>{% if about_page %}{{ about_page.title }}{% else %}About Vetri Digital{% endif %}</h1>
+                    <p class="about-description" {% if about_page and about_page.text_font_size or about_page and about_page.text_color %}style="{% if about_page.text_font_size %}font-size:{{ about_page.text_font_size }};{% endif %}{% if about_page.text_color %}color:{{ about_page.text_color }};{% endif %}"{% endif %}>
+                        {% if about_page %}{{ about_page.subtitle }}{% else %}Welcome to Vetri Digital Courses—empowering learners with skills for today's world. Learn, grow, succeed!{% endif %}
+                    </p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="image-container">
+                                {% if about_page and about_page.image %}
+                                    <img src="{{ about_page.image.url }}" alt="{{ about_page.title }}" class="img-fluid">
+                                {% else %}
+                                    <img src="{% static 'images/Men_Picture.png' %}" alt="Vetri Digital Team" class="img-fluid">
+                                {% endif %}
+                            </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="about-second-section">
+        <div class="container">
+            {% if about_sections %}
+                {% for section in about_sections %}
+                    {% if section.section_type == 'about_us' or forloop.counter == 1 %}
+                    <!-- About Us Section -->
+                    <div class="about-card" {% if section.background_color or section.text_color %}style="{% if section.background_color %}background:{{ section.background_color }};{% endif %}{% if section.text_color %}color:{{ section.text_color }};{% endif %}"{% endif %}>
+                        <div class="row about-us-row">
+                            <div class="col-lg-6 col-md-12 order-lg-1 order-md-2 order-2">
+                                <div class="text-content">
+                                    <h2 class="fs-2" {% if section.text_font_size or section.text_color %}style="{% if section.text_font_size %}font-size:{{ section.text_font_size }};{% endif %}{% if section.text_color %}color:{{ section.text_color }};{% endif %}"{% endif %}>{{ section.title }}</h2>
+                                    <div class="fs-4" {% if section.text_font_size or section.text_color %}style="{% if section.text_font_size %}font-size:{{ section.text_font_size }};{% endif %}{% if section.text_color %}color:{{ section.text_color }};{% endif %}"{% endif %}>
+                                        {{ section.content|safe }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 col-md-12 order-lg-2 order-md-1 order-1">
+                                <div class="image-wrapper">
+                                    {% if section.image %}
+                                        <img src="{{ section.image.url }}" alt="{{ section.title }}">
+                                    {% else %}
+                                        <img src="{% static 'images/about_us_image.png' %}" alt="About Us Illustration">
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% elif section.section_type == 'who_we_are' or forloop.counter == 2 %}
+                    <!-- Who We Are Section -->
+                    <div class="about-card" {% if section.background_color or section.text_color %}style="{% if section.background_color %}background:{{ section.background_color }};{% endif %}{% if section.text_color %}color:{{ section.text_color }};{% endif %}"{% endif %}>
+                        <div class="row who-we-are-row">
+                            <div class="col-lg-6 col-md-12 order-1">
+                                <div class="image-wrapper">
+                                    {% if section.image %}
+                                        <img src="{{ section.image.url }}" alt="{{ section.title }}">
+                                    {% else %}
+                                        <img src="{% static 'images/who_we_are_image.png' %}" alt="Who We Are Illustration">
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-lg-6 col-md-12 order-2">
+                                <div class="text-content">
+                                    <h2 class="fs-2">{{ section.title }}</h2>
+                                    <div class="fs-4">{{ section.content|safe }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <!-- About Us Section (Static Fallback) -->
+                <div class="about-card">
+                    <div class="row about-us-row">
+                        <div class="col-lg-6 col-md-12 order-lg-1 order-md-2 order-2">
+                            <div class="text-content">
+                                <h2>About Us</h2>
+                                <p>
+                                    Welcome to Vetri Digital Courses, where learning meets innovation!
+                                </p>
+                                <p>
+                                    At Vetri, we believe that education should be accessible, engaging, and empowering. Our mission is to bridge the gap between aspiring learners and industry-ready skills by offering comprehensive online courses tailored to meet today's digital demands.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 col-md-12 order-lg-2 order-md-1 order-1">
+                            <div class="image-wrapper">
+                                <img src="{% static 'images/about_us_image.png' %}" alt="About Us Illustration">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Who We Are Section (Static Fallback) -->
+                <div class="about-card">
+                    <div class="row who-we-are-row">
+                        <div class="col-lg-6 col-md-12 order-1">
+                            <div class="image-wrapper">
+                                <img src="{% static 'images/who_we_are_image.png' %}" alt="Who We Are Illustration">
+                            </div>
+                        </div>
+                        <div class="col-lg-6 col-md-12 order-2">
+                            <div class="text-content">
+                                <h2>Who We Are?</h2>
+                                <p>
+                                    We are a passionate team of educators, industry experts, and technologists driven by a shared vision: to empower learners with the tools they need to succeed in their careers and personal growth. Backed by years of expertise in digital education, we provide a platform that delivers high-quality learning experiences designed for real-world impact.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="about-third-section">
+        <div class="container">
+            {% if about_sections %}
+                {% for section in about_sections %}
+                    {% if section.section_type == 'vision' or forloop.counter == 3 %}
+                    <!-- Our Vision Section -->
+                    <div class="vision-card">
+                        <div class="row vision-row">
+                            <div class="col-lg-6 col-md-12 order-lg-1 order-md-2 order-2">
+                                <div class="text-content">
+                                    <h2>{{ section.title }}</h2>
+                                    <div class="fs-4">{{ section.content|safe }}</div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 col-md-12 order-lg-2 order-md-1 order-1">
+                                <div class="image-wrapper">
+                                    {% if section.image %}
+                                        <img src="{{ section.image.url }}" alt="{{ section.title }}">
+                                    {% else %}
+                                        <img src="{% static 'images/our_vision_image.png' %}" alt="Our Vision Illustration">
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <!-- Our Vision Section (Static Fallback) -->
+                <div class="vision-card">
+                    <div class="row vision-row">
+                        <div class="col-lg-6 col-md-12 order-lg-1 order-md-2 order-2">
+                            <div class="text-content">
+                                <h2>Our Vision</h2>
+                                <p>
+                                    At Vetri Digital Courses, our vision is to revolutionize online education by providing innovative, accessible, and industry-focused learning experiences. We aim to empower individuals with the skills and knowledge needed to excel in the digital age, bridging the gap between education and real-world application. By focusing on quality and practicality, we strive to inspire growth, unlock potential, and shape a future where learning drives success and innovation.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-lg-6 col-md-12 order-lg-2 order-md-1 order-1">
+                            <div class="image-wrapper">
+                                <img src="{% static 'images/our_vision_image.png' %}" alt="Our Vision Illustration">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

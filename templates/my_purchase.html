@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Purchase{% endblock %}
+
+{% block extra_css %}
+<style>
+.course-card {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    height: 100%;
+    background: #fff;
+    border: none;
+}
+
+.course-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+
+.course-content {
+    padding: 20px;
+    background: #f8f9fa;
+    text-align: left;
+}
+
+.course-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #333;
+    text-align: left;
+}
+
+.course-description {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 15px;
+    min-height: 60px;
+    font-weight: bold;
+    text-align: left;
+}
+
+.progress-bar {
+    background-color: #28a745;
+}
+
+.start-learning-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: 500;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    display: block;
+    transition: all 0.3s ease;
+}
+
+.start-learning-btn:hover {
+    background-color: #218838;
+    color: white;
+    text-decoration: none;
+}
+
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 30px;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #666;
+    font-weight: 500;
+    padding: 10px 20px;
+}
+
+.nav-tabs .nav-link.active {
+    color: #28a745;
+    border-bottom: 2px solid #28a745;
+    background: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h1 class="section-heading mb-4">My Purchase</h1>
+
+    <ul class="nav nav-tabs">
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'courses' %}active{% endif %}" href="#courses" data-bs-toggle="tab">Courses</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == 'achievements' %}active{% endif %}" href="#achievements" data-bs-toggle="tab">Achievements</a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade {% if active_tab == 'courses' %}show active{% endif %}" id="courses">
+            <div class="row g-4">
+                {% for access in course_accesses %}
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="course-card">
+                        {% if access.course.purchase_card %}
+                            <img src="{{ access.course.purchase_card.card_image.url }}" class="course-image" alt="{{ access.course.purchase_card.title }}">
+                            <div class="course-content">
+                                <h3 class="course-title">{{ access.course.purchase_card.title }}</h3>
+                                <p class="course-description">{{ access.course.purchase_card.description }}</p>
+                        {% else %}
+                            {% if access.course.browser_image %}
+                                <img src="{{ access.course.browser_image.url }}" class="course-image" alt="{{ access.course.name }}">
+                            {% else %}
+                                <img src="{% static 'images/course-placeholder.jpg' %}" class="course-image" alt="{{ access.course.name }}">
+                            {% endif %}
+                            <div class="course-content">
+                                <h3 class="course-title">{{ access.course.name }}</h3>
+                                <p class="course-description">{{ access.course.description|truncatewords:20 }}</p>
+                        {% endif %}
+                            {% if access.progress and access.progress > 0 %}
+                            <div class="progress mb-3" style="height: 10px;">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ access.progress }}%;" 
+                                     aria-valuenow="{{ access.progress }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100"></div>
+                            </div>
+                            {% endif %}
+                            <a href="{% url 'course_detail' access.course.slug %}" class="start-learning-btn">
+                                {% if access.course.purchase_card %}
+                                    {{ access.course.purchase_card.button_text }}
+                                {% else %}
+                                    Start Learning
+                                {% endif %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info text-center py-4">
+                        <h4 class="alert-heading mb-3">No Courses Yet</h4>
+                        <p>You haven't purchased any courses yet.</p>
+                        <a href="{% url 'home' %}" class="btn btn-success mt-2">Browse Courses</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade {% if active_tab == 'achievements' %}show active{% endif %}" id="achievements">
+            <div class="container">
+                <h2 class="mb-4">Certificates</h2>
+                <p class="text-muted">
+                    Once you've earned a Certificate of Achievement or Statement of Participation it will appear here.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tabs
+    var triggerTabList = [].slice.call(document.querySelectorAll('.nav-tabs a'));
+    triggerTabList.forEach(function(triggerEl) {
+        var tabTrigger = new bootstrap.Tab(triggerEl);
+        triggerEl.addEventListener('click', function(event) {
+            event.preventDefault();
+            tabTrigger.show();
+        });
+    });
+
+    // Handle URL hash for tab switching
+    if (window.location.hash) {
+        const hash = window.location.hash;
+        const tab = document.querySelector(`.nav-tabs a[href="${hash}"]`);
+        if (tab) {
+            new bootstrap.Tab(tab).show();
+        }
+    }
+
+    // Update URL hash when tab changes
+    const tabs = document.querySelectorAll('.nav-tabs a');
+    tabs.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            window.location.hash = event.target.getAttribute('href');
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Vetri Digital College{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg fixed-top bg-white">
+        <div class="container">
+            <button class="menu-toggle" type="button" id="sidebarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <a class="navbar-brand" href="/">
+                <img src="{% static 'images/logo.png' %}" alt="Vetri Digital College" height="50">
+            </a>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <div class="search-bar mx-auto">
+                    <input type="text" class="form-control" placeholder="What do want to learn?">
+                    <button class="btn search-btn"><i class="fas fa-search"></i></button>
+                </div>
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'profile' %}">Profile</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn" href="{% url 'logout' %}">Logout</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="btn me-2 {% if request.resolver_match.url_name == 'login' %}active{% endif %}" href="{% url 'login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn {% if request.resolver_match.url_name == 'signup' %}active{% endif %}" href="{% url 'signup' %}">SignUp</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="btn-close" id="sidebarClose"></button>
+        </div>
+        <div class="sidebar-content">
+            <ul class="sidebar-menu">
+                <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="{% url 'about' %}"><i class="fas fa-info-circle"></i> About us</a></li>
+                <li><a href="{% url 'contact' %}"><i class="fas fa-envelope"></i> Contact us</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'profile' %}"><i class="fas fa-user"></i> Profile</a></li>
+                    <li><a href="{% url 'my-purchase' %}"><i class="fas fa-shopping-cart"></i> My Purchase</a></li>
+                    <li><a href="{% url 'settings' %}"><i class="fas fa-cog"></i> Settings</a></li>
+                    <li><a href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                {% else %}
+                    <li><a href="{% url 'login' %}"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+                    <li><a href="{% url 'signup' %}"><i class="fas fa-user-plus"></i> Sign Up</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3">
+                    <img src="{% static 'images/logo.png' %}" alt="Vetri Digital College" height="50">
+                    <p class="mt-3">Vetri Digital College</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Other Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'about' %}">About us</a></li>
+                        <li><a href="{% url 'contact' %}">Contact us</a></li>
+                        <li><a href="{% url 'privacy' %}">Privacy policy</a></li>
+                        <li><a href="{% url 'terms' %}">Terms of use</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Company</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'team' %}">Our team</a></li>
+                        <li><a href="{% url 'testimonials' %}">Testimonials</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Address</h5>
+                    <p>Vetridigitalcollege.com</p>
+                    <p>8438164827 / 8438781327</p>
+                    <p>VTS & VIS, April's Complex, Shanthi Complex, Surandai.</p>
+                </div>
+            </div>
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <p>Copyright © 2023 Vetri digital college | All Rights Reserved</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

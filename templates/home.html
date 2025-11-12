@@ -1,0 +1,735 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - Vetri Digital College{% endblock %}
+
+{% block extra_css %}
+<style>
+    .course-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    
+    .course-card .course-name {
+        color: #333;
+        text-decoration: none;
+        font-weight: 500;
+        margin-top: 12px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+    {% comment %}Hero banner: apply background image and optional overlay/text/button colors from admin{% endcomment %}
+    {# Compose background with overlay if provided #}
+    <div class="hero-banner" {% if hero_banner and hero_banner.image %}style="background-image: url('{{ hero_banner.image.url }}'); background-size: cover; background-position: center; position:relative;"{% endif %}>
+        {% if hero_banner and hero_banner.overlay_color %}
+        <div class="hero-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;background:{{ hero_banner.overlay_color }};"></div>
+        {% endif %}
+        <div class="hero-content" style="position:relative;">
+            <h1>
+                {% if hero_banner %}
+                <span {% if hero_banner.text_color or hero_banner.text_font_size %}style="{% if hero_banner.text_color %}color:{{ hero_banner.text_color }};{% endif %}{% if hero_banner.text_font_size %}font-size:{{ hero_banner.text_font_size }};{% endif %}"{% endif %}>{{ hero_banner.title }}</span>
+                - <span class="highlight" {% if hero_banner.text_color or hero_banner.text_font_size %}style="{% if hero_banner.text_color %}color:{{ hero_banner.text_color }};{% endif %}{% if hero_banner.text_font_size %}font-size:{{ hero_banner.text_font_size }};{% endif %}"{% endif %}>{{ hero_banner.highlight_text }}</span>
+                {% else %}
+                Your Journey to Knowledge
+                Starts Here - <span class="highlight">Explore,<br>
+                Enroll, Excel!</span>
+                {% endif %}
+            </h1>
+            <a href="{% if hero_banner %}{{ hero_banner.button_url }}{% else %}#{% endif %}" class="enroll-btn" {% if hero_banner %}style="{% if hero_banner.button_background %}background:{{ hero_banner.button_background }};{% endif %}{% if hero_banner.button_text_color %}color:{{ hero_banner.button_text_color }};{% endif %}{% if hero_banner.button_font_size %}font-size:{{ hero_banner.button_font_size }};{% endif %}"{% endif %}>
+                {% if hero_banner %}{{ hero_banner.button_text }}{% else %}Enroll Now{% endif %}
+            </a>
+        </div>
+    </div>
+     <!-- Dynamic Sections from Admin Panel -->
+      {% for section in sections %}
+           <div class="features-section" id="{{ section.slug }}"
+           {% if section.image %}
+               style="background-image: url('{{ section.image.url }}'); {% if section.custom_css %}{{ section.custom_css }};{% endif %} background-size: cover; background-position: center;"
+           {% elif section.background_color or section.custom_css %}
+               style="{% if section.background_color %}background:{{ section.background_color }};{% endif %} {% if section.custom_css %}{{ section.custom_css }};{% endif %}"
+           {% endif %}>
+          <h2 class="section-title" {% if section.text_color %}style="color:{{ section.text_color }};"{% endif %}>{{ section.title }}</h2>
+    {% if section.description %}
+    <p class="section-description" {% if section.text_color or section.text_font_size %}style="{% if section.text_color %}color:{{ section.text_color }};{% endif %}{% if section.text_font_size %}font-size:{{ section.text_font_size }};{% endif %}"{% endif %}>{{ section.description }}</p>
+    {% endif %}
+        
+          <div class="cards-container">
+            {% for content in section.active_contents %}
+            <div class="feature-card">
+                <span class="card-number">{{ forloop.counter }}</span>
+                <div class="icon-circle">
+                    {% if content.image %}
+                    <img src="{{ content.image.url }}" alt="{{ content.title }}">
+                    {% else %}
+
+      
+
+                    <img src="{% static 'images/h2.png' %}" alt="{{ content.title }}">
+                    {% endif %}
+                </div>
+                <h3 class="card-title">{{ content.title }}</h3>
+                <p class="card-description">{{ content.content }}</p>
+            </div>
+            {% endfor %}
+            
+            {% if not section.active_contents %}
+            <!-- Default Cards if no content is added yet -->
+            <!-- Card 1 -->
+            <div class="feature-card">
+                <span class="card-number">01</span>
+                <div class="icon-circle">
+                    <img src="{% static 'images/h2.png' %}" alt="Online Courses Icon">
+                </div>
+                <h3 class="card-title">80+ Online Courses</h3>
+                <p class="card-description">Unlock your future with 80+ online courses tailored for digital education. Learn, grow, and excel from anywhere!</p>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="feature-card">
+                <span class="card-number">02</span>
+                <div class="icon-circle">
+                    <img src="{% static 'images/h2.png' %}" alt="Top Instructors Icon">
+                </div>
+                <h3 class="card-title">Top Instructors</h3>
+                <p class="card-description">Learn from the best! Our digital education courses are led by top instructors to ensure your success.</p>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="feature-card">
+                <span class="card-number">03</span>
+                <div class="icon-circle">
+                    <img src="{% static 'images/h2.png' %}" alt="Online Certificates Icon">
+                </div>
+                <h3 class="card-title">Online Certificates</h3>
+                <p class="card-description">Earn industry-recognized digital education certificates that showcase your skills and boost your career prospects.</p>
+            </div>
+            {% endif %}
+        </div>
+     </div>
+     {% empty %}
+     <!-- Default Section if no sections are added yet -->
+     <div class="features-section">
+        <h2 class="section-title">Explore Yourself All Over The World</h2>
+        
+        <div class="cards-container">
+            {% if feature_cards %}
+                {% for card in feature_cards %}
+                    <div class="feature-card">
+                        <span class="card-number">{{ card.card_number|stringformat:"02d" }}</span>
+                        <div class="icon-circle">
+                            <img src="{{ card.card_image.url }}" alt="{{ card.card_title }} Icon">
+                        </div>
+                        <h3 class="card-title">{{ card.card_title }}</h3>
+                        <p class="card-description">{{ card.card_description }}</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <!-- Default cards if no feature cards are added yet -->
+                <div class="feature-card">
+                    <span class="card-number">01</span>
+                    <div class="icon-circle">
+                        <img src="{% static 'images/h2.png' %}" alt="Online Courses Icon">
+                    </div>
+                    <h3 class="card-title">80+ Online Courses</h3>
+                    <p class="card-description">Unlock your future with 80+ online courses tailored for digital education. Learn, grow, and excel from anywhere!</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="card-number">02</span>
+                    <div class="icon-circle">
+                        <img src="static/images/h2.png" alt="Top Instructors Icon">
+                    </div>
+                    <h3 class="card-title">Top Instructors</h3>
+                    <p class="card-description">Learn from the best! Our digital education courses are led by top instructors to ensure your success.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="card-number">03</span>
+                    <div class="icon-circle">
+                        <img src="static/images/h2.png" alt="Online Certificates Icon">
+                    </div>
+                    <h3 class="card-title">Online Certificates</h3>
+                    <p class="card-description">Earn industry-recognized digital education certificates that showcase your skills and boost your career prospects.</p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="card-number">04</span>
+                    <div class="icon-circle">
+                        <img src="static/images/h2.png" alt="Members Icon">
+                    </div>
+                    <h3 class="card-title">50+ Members</h3>
+                    <p class="card-description">oin our thriving community of 50+ members and elevate your skills with our digital education platform</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="homes-about-section">
+        {% if home_about %}
+        <div class="image-container">
+            <img src="{{ home_about.image.url }}" alt="{{ home_about.section_label }}">
+        </div>
+
+        <div class="content-container">
+            <h3 class="section-label">{{ home_about.section_label }}</h3>
+            <h2 class="main-heading">{{ home_about.main_heading }}</h2>
+            <p class="description">{{ home_about.description }}</p>
+            <a href="{{ home_about.button_url }}" class="browse-btn">{{ home_about.button_text }}</a>
+        </div>
+        {% else %}
+        <div class="image-container">
+            <img src="static/images/h3.png" alt="Professional Instructor">
+        </div>
+
+        <div class="content-container">
+            <h3 class="section-label">About Our Platform</h3>
+            <h2 class="main-heading">We are innovative educational institution to the creation of the student</h2>
+            <p class="description">Our team consists of certified IT professionals with expertise in network security, cloud computing, software development, and technical support. With decades of combined experience, we provide strategic IT guidance and technical support tailored to your business needs.</p>
+            <a href="#" class="browse-btn">Browse All Courses</a>
+        </div>
+        {% endif %}
+    </div>
+
+     <div class="course-browser">
+        <h1 class="course-title">Browse Our Courses</h1>
+        
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-category="all">All Courses</button>
+            {% if course_categories %}
+                {% for category in course_categories %}
+                    <button class="filter-btn" data-category="{{ category.id }}" data-category-name="{{ category.name|lower }}">{{ category.name }}</button>
+                {% endfor %}
+            {% else %}
+                <button class="filter-btn" data-category="1" data-category-name="design">Design</button>
+                <button class="filter-btn" data-category="2" data-category-name="development">Development</button>
+                <button class="filter-btn" data-category="3" data-category-name="framework">Frame Work</button>
+                <button class="filter-btn" data-category="4" data-category-name="business">Business</button>
+            {% endif %}
+        </div>
+
+    <div class="course-grid" style="display: flex; flex-wrap: wrap; justify-content: center; align-items: center; min-height: 250px;">
+            {% if course_browsers %}
+                {% for course in course_browsers %}
+                    <a href="{% url 'course_detail' slug=course.slug %}" class="course-card" data-category="{{ course.category.id }}" data-category-name="{{ course.category.name|lower }}" style="width:220px;height:260px;margin:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;text-decoration:none;color:inherit;cursor:pointer;transition:transform 0.3s ease, box-shadow 0.3s ease;">
+                        {% if course.image %}
+                            <img src="{{ course.image.url }}" alt="{{ course.name }}" class="course-image">
+                        {% else %}
+                            <img src="static/images/h4.png" alt="{{ course.name }}" class="course-image">
+                        {% endif %}
+                        <div class="course-name">{{ course.name }}</div>
+                    </a>
+                {% endfor %}
+            {% else %}
+                    <a href="{% url 'course_detail' slug='python-fullstack' %}" class="course-card" data-category="development" data-category-name="development">
+                        <img src="static/images/h4.png" alt="Python Fullstack" class="course-image">
+                        <div class="course-name">Python Fullstack</div>
+                    </a>
+
+                    <a href="{% url 'course_detail' slug='java-fullstack' %}" class="course-card" data-category="development" data-category-name="development">
+                        <img src="static/images/h5.png" alt="Java Fullstack" class="course-image">
+                        <div class="course-name">Java Fullstack</div>
+                    </a>
+
+                    <a href="{% url 'course_detail' slug='ui-ux-designing' %}" class="course-card" data-category="design" data-category-name="design">
+                        <img src="static/images/h6.png" alt="UI UX Designing" class="course-image">
+                        <div class="course-name">UI UX Designing</div>
+                    </a>
+
+                    <a href="{% url 'course_detail' slug='data-analytics' %}" class="course-card" data-category="business" data-category-name="business">
+                        <img src="static/images/h7.png" alt="Data Analytics" class="course-image">
+                        <div class="course-name">Data Analytics</div>
+                    </a>
+
+                    <a href="{% url 'course_detail' slug='data-science' %}" class="course-card" data-category="business" data-category-name="business">
+                        <img src="static/images/h8.png" alt="Data Science" class="course-image">
+                        <div class="course-name">Data Science</div>
+                    </a>
+
+                    <a href="{% url 'course_detail' slug='mern-stack-developer' %}" class="course-card" data-category="development" data-category-name="development">
+                        <img src="static/images/h9.png" alt="MERN Stack Developer" class="course-image">
+                        <div class="course-name">MERN Stack Developer</div>
+                    </a>
+
+                    <a href="{% url 'course_detail' slug='mobile-app-development' %}" class="course-card" data-category="development" data-category-name="development">
+                        <img src="static/images/h10.png" alt="Mobile App Development" class="course-image">
+                        <div class="course-name">Mobile App Development</div>
+                    </a>
+
+                    <a href="{% url 'course_detail' slug='software-testing' %}" class="course-card" data-category="development" data-category-name="development">
+                        <img src="static/images/h11.png" alt="Software Testing" class="course-image">
+                        <div class="course-name">Software Testing</div>
+                    </a>
+
+                    <a href="{% url 'course_detail' slug='front-end-developer' %}" class="course-card" data-category="development" data-category-name="development">
+                        <img src="static/images/h12.png" alt="Front-End Developer" class="course-image">
+                        <div class="course-name">Front-End Developer</div>
+                    </a>
+            {% endif %}
+
+            <div class="course-card" data-category="cloud" data-category-name="cloud" style="width:220px;height:260px;margin:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;">
+                <img src="static/images/h16.png" alt="AWS" class="course-image">
+                <div class="course-name">AWS</div>
+            </div>
+
+            <div class="course-card" data-category="business" data-category-name="business" style="width:220px;height:260px;margin:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;">
+                <img src="static/images/h17.png" alt="Business Analytics" class="course-image">
+                <div class="course-name">Business Analytics</div>
+            </div>
+
+            <div class="course-card" data-category="marketing" data-category-name="marketing" style="width:220px;height:260px;margin:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;">
+                <img src="static/images/h18.png" alt="Digital Marketing" class="course-image">
+                <div class="course-name">Digital Marketing</div>
+            </div>
+        </div>
+    </div>
+
+    <section class="learning-banner">
+        <div class="banner-image-container">
+            <div class="banner-image-wrapper">
+                {% if learning_banner and learning_banner.image %}
+                    <img src="{{ learning_banner.image.url }}" alt="{{ learning_banner.title }}" class="banner-image">
+                {% else %}
+                    <img src="static/images/h19.png" alt="Learning Together" class="banner-image">
+                {% endif %}
+            </div>
+
+            <div class="decorative-dots">
+                <div class="dot dot-green"></div>
+            </div>
+        </div>
+
+        <div class="banner-content">
+            <h1 class="banner-title">
+                {% if learning_banner %}
+                    {{ learning_banner.title|safe }}{% if learning_banner.highlight %} <span class="highlight">{{ learning_banner.highlight }}</span>{% endif %}
+                {% else %}
+                    Join <span class="highlight">World's largest</span> learning platform today
+                {% endif %}
+            </h1>
+            <p class="banner-subtitle">
+                {% if learning_banner and learning_banner.subtitle %}
+                    {{ learning_banner.subtitle }}
+                {% else %}
+                    Start learning by registering for free
+                {% endif %}
+            </p>
+            <a href="{% if learning_banner %}{{ learning_banner.button_url }}{% else %}#{% endif %}" class="cta-button">{% if learning_banner %}{{ learning_banner.button_text }}{% else %}Sign up for Free{% endif %}</a>
+        </div>
+    </section>
+     <section class="instructor-section">
+        <!-- <h2 class="section-title">Our Best <span class="highlight">Instructor</span></h2>
+        
+        <div class="carousel-container">
+            <button class="carousel-nav carousel-nav-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+            </button>
+
+            <div class="instructors-grid">
+                <div class="instructor-card">
+                    <img src="static/images/h20.png" alt="Instructor" class="instructor-image">
+                    <h3 class="instructor-name">Jacob Jones</h3>
+                    <p class="instructor-role">UI-UX Design Expert</p>
+                </div>
+
+                <div class="instructor-card">
+                    <img src="static/images/h21.png" alt="Instructor" class="instructor-image">
+                    <h3 class="instructor-name">Jacob Jones</h3>
+                    <p class="instructor-role">UI-UX Design Expert</p>
+                </div>
+
+                <div class="instructor-card">
+                    <img src="static/images/h22.png" alt="Instructor" class="instructor-image">
+                    <h3 class="instructor-name">Jacob Jones</h3>
+                    <p class="instructor-role">UI-UX Design Expert</p>
+                </div>
+
+                <div class="instructor-card">
+                    <img src="static/images/h23.png" alt="Instructor" class="instructor-image">
+                    <h3 class="instructor-name">Jacob Jones</h3>
+                    <p class="instructor-role">UI-UX Design Expert</p>
+                </div>
+            </div>
+
+            <button class="carousel-nav carousel-nav-right">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+            </button>
+        </div> -->
+
+        <div class="carousel-dots">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+
+        <div class="why-choose-section">
+            {% if why_choose %}
+                <h2 class="why-choose-title">{{ why_choose.section_title }}</h2>
+                <p class="why-choose-subtitle">{{ why_choose.section_subtitle }}</p>
+
+                <div class="features-box">
+                    <div class="features-grid">
+                        {% for item in why_choose.active_items %}
+                            <div class="feature-item" style="display:flex;align-items:center;gap:16px;">
+                                <div class="feature-icon">
+                                    {% if item.image %}
+                                        <img src="{{ item.image.url }}" alt="icon" style="max-height:64px;" />
+                                    {% else %}
+                                        <!-- Preserve original inline SVG if no image provided -->
+                                        <svg viewBox="0 0 24 24" fill="none">
+                                            <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                <div style="display:flex;flex-direction:column;">
+                                    <b>{{ item.label }}</b>
+                                    {% if item.description %}
+                                        <p class="feature-description" style="margin:0;">{{ item.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <h2 class="why-choose-title">Why Choose Us?</h2>
+                <p class="why-choose-subtitle">Get instant Mentorship and a supportive learning community.</p>
+
+                <div class="features-box">
+                    <div class="features-grid">
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <b>Flexible Learning Options</b>
+                            
+                        </div>
+
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <b>Premium Quality Courses</b>
+                            
+                        </div>
+
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <b>Career-Focused Programs</b>
+                            
+                        </div>
+
+                        <div class="feature-item">
+                            <div class="feature-icon">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </div>
+                            <b>Personalized Mentorship</b>
+                           
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+      <section class="certificate-testimonials-section">
+        <div class="certificate-container">
+            {% if certificate_section %}
+                <h2 class="certificate-title">{{ certificate_section.title }}</h2>
+                <p class="certificate-subtitle">{{ certificate_section.subtitle|linebreaksbr }}</p>
+                <div class="certificate-image-wrapper">
+                    {% if certificate_section.image %}
+                        <img src="{{ certificate_section.image.url }}" alt="{{ certificate_section.title }}" class="certificate-image">
+                    {% else %}
+                        <img src="static/images/h24.png" alt="VTS Certificate" class="certificate-image">
+                    {% endif %}
+                </div>
+            {% else %}
+                <h2 class="certificate-title">VTS Certificate</h2>
+                <p class="certificate-subtitle">
+                    Complete the course with projects, and request your<br>
+                    course completion certificate
+                </p>
+                <div class="certificate-image-wrapper">
+                    <img src="static/images/h24.png" alt="VTS Certificate" class="certificate-image">
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="testimonials-container">
+            <div class="testimonials-header">
+                <div class="header-line"></div>
+                <h2 class="testimonials-title">Testimonials</h2>
+                <div class="header-line"></div>
+            </div>
+            <h3 class="testimonials-subtitle">what our students are saying</h3>
+
+            <div class="testimonials-list">
+                {% for t in testimonials %}
+                    <div class="testimonial-card">
+                        <div class="testimonial-avatar"><img src="{% if t.image %}{{ t.image.url }}{% else %}{% static 'images/h20.png' %}{% endif %}" alt="{{ t.student_name }}"></div>
+                        <div class="testimonial-body">
+                            <p class="testimonial-name">{{ t.student_name }}</p>
+                            <p class="testimonial-text">{{ t.content }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+      <!-- Testimonials strip + FAQ -->
+        <div class="testimonials-faq-wrapper">
+            <section class="testimonials-strip">
+                <div class="testimonials-cards" aria-label="testimonials">
+                    {% if testimonial_strips %}
+                        {% for strip in testimonial_strips %}
+                            <div class="testimonial-card">
+                                <div class="testimonial-avatar">
+                                    {% if strip.image %}
+                                        <img src="{{ strip.image.url }}" alt="{{ strip.title }}">
+                                    {% else %}
+                                        <img src="{% static 'images/h20.png' %}" alt="Default">
+                                    {% endif %}
+                                </div>
+                                <div class="testimonial-body">
+                                    <p class="testimonial-name">{{ strip.title }}</p>
+                                    {% if strip.subtitle %}<p class="testimonial-role">{{ strip.subtitle }}</p>{% endif %}
+                                    {% if strip.description %}<p class="testimonial-text">{{ strip.description }}</p>{% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Fallback static testimonials if none are active -->
+                        <div class="testimonial-card">
+                            <div class="testimonial-avatar"><img src="{% static 'images/h20.png' %}" alt="Abinaya"></div>
+                            <div class="testimonial-body">
+                                <p class="testimonial-name">Abinaya</p>
+                                <p class="testimonial-role">UI-UX Designer</p>
+                                <p class="testimonial-text">Ut pharetra ipsum nec leo blandit, sit amet tincidunt eros pharetra. Nam sed imperdiet turpis.</p>
+                            </div>
+                        </div>
+                        <div class="testimonial-card">
+                            <div class="testimonial-avatar"><img src="{% static 'images/h21.png' %}" alt="Sumaya"></div>
+                            <div class="testimonial-body">
+                                <p class="testimonial-name">Sumaya</p>
+                                <p class="testimonial-role">UI-UX Designer</p>
+                                <p class="testimonial-text">Ut pharetra ipsum nec leo blandit, sit amet tincidunt eros pharetra. Nam sed imperdiet turpis.</p>
+                            </div>
+                        </div>
+                        <div class="testimonial-card">
+                            <div class="testimonial-avatar"><img src="{% static 'images/h22.png' %}" alt="Mari"></div>
+                            <div class="testimonial-body">
+                                <p class="testimonial-name">Mari</p>
+                                <p class="testimonial-role">UI-UX Designer</p>
+                                <p class="testimonial-text">Ut pharetra ipsum nec leo blandit, sit amet tincidunt eros pharetra. Nam sed imperdiet turpis.</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="testimonial-controls">
+                    <button class="btn prev-testimonial">◀</button>
+                    <button class="btn next-testimonial">▶</button>
+                </div>
+            </section>
+
+            <section class="faq-section">
+                <div class="faq-container">
+                    <h2 class="faq-title">Frequently asked questions</h2>
+                    <div class="accordion" role="tablist">
+                        {% if faqs and faqs.count %}
+                            {% for q in faqs %}
+                                <div class="accordion-item">
+                                    <div class="accordion-question">{{ q.question }}<span>▾</span></div>
+                                    <div class="accordion-answer">{{ q.answer }}</div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="accordion-item">
+                                <div class="accordion-question">What courses does Vetri Digital College offer?<span>▾</span></div>
+                                <div class="accordion-answer">We offer a wide range of courses including Development, Design, Data Science, and Business analytics.</div>
+                            </div>
+                            <div class="accordion-item">
+                                <div class="accordion-question">Is there an eligibility requirement to enroll in a course?<span>▾</span></div>
+                                <div class="accordion-answer">Most courses are open to beginners; some advanced courses may require prerequisites listed on the course page.</div>
+                            </div>
+                            <div class="accordion-item">
+                                <div class="accordion-question">Are your courses suitable for beginners?<span>▾</span></div>
+                                <div class="accordion-answer">Yes — we provide beginner-friendly courses as well as advanced tracks.</div>
+                            </div>
+                            <div class="accordion-item">
+                                <div class="accordion-question">What is the fee structure for the courses?<span>▾</span></div>
+                                <div class="accordion-answer">Fees vary per course. Check each course detail page for pricing and any installment plans.</div>
+                            </div>
+                            <div class="accordion-item">
+                                <div class="accordion-question">Will I receive a certificate after completing the course?<span>▾</span></div>
+                                <div class="accordion-answer">Yes, you will receive a certificate upon successful completion of course requirements.</div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </div>
+     
+
+     <script>
+        const dots = document.querySelectorAll('.dot');
+        const navLeft = document.querySelector('.carousel-nav-left');
+        const navRight = document.querySelector('.carousel-nav-right');
+        let currentSlide = 0;
+
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                dots.forEach(d => d.classList.remove('active'));
+                dot.classList.add('active');
+                currentSlide = index;
+            });
+        });
+
+        navLeft.addEventListener('click', () => {
+            currentSlide = (currentSlide - 1 + dots.length) % dots.length;
+            dots.forEach(d => d.classList.remove('active'));
+            dots[currentSlide].classList.add('active');
+        });
+
+        navRight.addEventListener('click', () => {
+            currentSlide = (currentSlide + 1) % dots.length;
+            dots.forEach(d => d.classList.remove('active'));
+            dots[currentSlide].classList.add('active');
+        });
+    </script>
+    <script>
+        // Course filtering: show/hide .course-card based on the clicked button's data-category.
+        // Supports numeric category IDs and textual category names. Preserves layout by
+        // using inline display style (empty string to reset to stylesheet default).
+        (function() {
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const courseCards = document.querySelectorAll('.course-card');
+            const filterContainer = document.querySelector('.filter-buttons');
+
+            // Debug: report counts so we can verify elements exist in DOM
+            console.log('[filter] filterBtns found:', filterBtns.length, 'courseCards found:', courseCards.length);
+
+            const normalize = s => String(s || '').trim().toLowerCase();
+
+            function applyFilter(category) {
+                // Show all when category is falsy or 'all'
+                if (!category || category === 'all') {
+                    courseCards.forEach(c => c.style.display = '');
+                    console.log('[filter] applied: all (showing all)');
+                    return;
+                }
+
+                const isNumeric = /^\d+$/.test(String(category));
+
+                courseCards.forEach(card => {
+                    const cardId = card.dataset.category ? String(card.dataset.category).trim() : '';
+                    const cardName = card.dataset.categoryName ? String(card.dataset.categoryName).trim().toLowerCase() : '';
+
+                    let match = false;
+                    if (isNumeric) {
+                        // First try matching by id
+                        match = cardId === String(category);
+                        // Fallback to name match if id didn't match
+                        if (!match && cardName) match = cardName === String(category).toLowerCase();
+                    } else {
+                        // Prefer name matching for textual categories
+                        match = cardName === String(category).toLowerCase();
+                        if (!match && cardId) match = cardId === String(category);
+                    }
+
+                    console.log('[filter] Card category:', cardId || cardName || '(none)', 'Selected category:', category, '=> match:', match, 'cardName:', cardName);
+                    card.style.display = match ? '' : 'none';
+                });
+
+                const visible = Array.from(courseCards).filter(c => c.style.display !== 'none');
+                console.log('[filter] Visible cards after filtering:', visible.length);
+            }
+
+            // Use event delegation in case buttons are re-rendered or there are timing subtleties.
+            if (filterContainer) {
+                filterContainer.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.filter-btn');
+                    if (!btn) return;
+                    // Update active class
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    // Prefer textual category name when available, else fall back to id
+                    const category = btn.dataset.categoryName ? String(btn.dataset.categoryName).toLowerCase() : btn.dataset.category;
+                    console.log('[filter] clicked category (resolved):', category, 'raw id:', btn.dataset.category, 'name:', btn.dataset.categoryName);
+                    applyFilter(category);
+                });
+            } else {
+                // Fallback: attach directly if container not found
+                filterBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        filterBtns.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                        const category = this.dataset.categoryName ? String(this.dataset.categoryName).toLowerCase() : this.dataset.category;
+                        console.log('[filter] clicked category (direct resolved):', category, 'raw id:', this.dataset.category, 'name:', this.dataset.categoryName);
+                        applyFilter(category);
+                    });
+                });
+            }
+
+            // Ensure initial state matches the currently active button on load.
+            // Call immediately in case DOMContentLoaded already fired, and also
+            // keep the DOMContentLoaded listener for older timing cases.
+            const activeBtn = document.querySelector('.filter-btn.active');
+            if (activeBtn) {
+                const cat = activeBtn.dataset.categoryName ? String(activeBtn.dataset.categoryName).toLowerCase() : activeBtn.dataset.category;
+                applyFilter(cat);
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const active = document.querySelector('.filter-btn.active');
+                if (active) {
+                    const cat = active.dataset.categoryName ? String(active.dataset.categoryName).toLowerCase() : active.dataset.category;
+                    applyFilter(cat);
+                }
+            });
+        })();
+    </script>
+    <script>
+        // Accordion toggle
+        document.querySelectorAll('.accordion .accordion-item').forEach(item => {
+            const q = item.querySelector('.accordion-question');
+            q.addEventListener('click', () => {
+                item.classList.toggle('open');
+            });
+        });
+
+        // Simple testimonial navigation (scroll within container)
+        const cards = document.querySelector('.testimonials-cards');
+        document.querySelector('.prev-testimonial')?.addEventListener('click', () => {
+            cards.scrollBy({left: -300, behavior: 'smooth'});
+        });
+        document.querySelector('.next-testimonial')?.addEventListener('click', () => {
+            cards.scrollBy({left: 300, behavior: 'smooth'});
+        });
+    </script>
+{% endfor %}
+{% endblock %}
