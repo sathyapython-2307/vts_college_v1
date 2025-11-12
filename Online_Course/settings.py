@@ -5,15 +5,63 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# In production, this MUST be set via environment variable
-if 'SECRET_KEY' not in os.environ:
-    if os.environ.get('DEBUG', 'False').lower() == 'true':
-        # Development fallback - NEVER use in production
+# Prefer an explicit SECRET_KEY from the environment in production.
+# Behavior:
+# - If DEBUG=True, use a safe development fallback.
+# - If DEBUG=False and SECRET_KEY is provided in the environment, use it.
+# - If DEBUG=False and SECRET_KEY is missing, but we're running on Render (or
+#   SECRET_KEY auto-generation is enabled), generate a secure key at startup so
+#   the app can boot. This avoids an immediate crash during deploys where the
+#   secret wasn't configured. Note: generated keys are ephemeral (per instance)
+#   and will invalidate existing sessions across restarts.
+from pathlib import Path as _Path
+import secrets as _secrets
+
+_secret_from_env = os.environ.get('SECRET_KEY')
+_debug_env = os.environ.get('DEBUG', 'False').lower() == 'true'
+
+if _secret_from_env:
+    SECRET_KEY = _secret_from_env
+else:
+    if _debug_env:
+        # Development fallback - NEVER use this in production
         SECRET_KEY = 'django-insecure-dev-key-only-for-local-development-change-this'
     else:
-        raise ValueError('SECRET_KEY environment variable is required in production')
-else:
-    SECRET_KEY = os.environ['SECRET_KEY']
+        # In production: try to auto-generate a secret when running on Render
+        # or when auto-generation is explicitly enabled. This guarantees the
+        # process can start even if the environment was not configured, which
+        # is useful for automated deploys. Prefer setting SECRET_KEY in the
+        # environment for a stable secret across restarts.
+        _running_on_render = bool(os.environ.get('RENDER_EXTERNAL_HOSTNAME') or os.environ.get('RENDER'))
+        _auto_generate = os.environ.get('SECRET_KEY_AUTO_GENERATE', 'true').lower() == 'true'
+
+        if _running_on_render or _auto_generate:
+            # Attempt to persist the generated key to a file on the instance so
+            # subsequent process restarts on the same instance reuse it. This
+            # won't survive deploys, but reduces churn for a single instance.
+            try:
+                _secret_file = _Path(BASE_DIR) / '.secret_key'
+                if _secret_file.exists():
+                    SECRET_KEY = _secret_file.read_text().strip()
+                else:
+                    SECRET_KEY = _secrets.token_urlsafe(64)
+                    try:
+                        _secret_file.write_text(SECRET_KEY)
+                        # Restrict permissions when possible (POSIX only)
+                        try:
+                            os.chmod(_secret_file, 0o600)
+                        except Exception:
+                            pass
+                    except Exception:
+                        # If writing fails, fall back to in-memory secret
+                        SECRET_KEY = SECRET_KEY
+            except Exception:
+                # As a last resort generate an in-memory secret so the app boots
+                SECRET_KEY = _secrets.token_urlsafe(64)
+            # Warn in logs so operators know a generated secret is in use
+            print('Warning: SECRET_KEY was not set; a key was generated at startup. For production set SECRET_KEY in the environment to ensure stability.')
+        else:
+            raise ValueError('SECRET_KEY environment variable is required in production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
