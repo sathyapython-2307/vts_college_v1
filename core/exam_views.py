@@ -124,10 +124,19 @@ def exam_start(request, course_id):
     # attempt_number should be last attempt_number + 1
     last_attempt = attempts.order_by('-attempt_number').first()
     attempt_number = (last_attempt.attempt_number + 1) if last_attempt else 1
+    # Determine how many questions should be included in this attempt.
+    active_q_count = exam.questions.filter(is_active=True).count()
+    # If exam.question_count is 0, it means use all active questions. Otherwise use the configured count.
+    configured_count = (exam.question_count or 0)
+    if configured_count and configured_count > 0:
+        use_count = min(configured_count, active_q_count)
+    else:
+        use_count = active_q_count
+
     attempt = ExamAttempt.objects.create(
         course_access=access,
         attempt_number=attempt_number,
-        total_questions=exam.questions.filter(is_active=True).count(),
+        total_questions=use_count,
         duration_minutes=exam.duration_minutes  # Capture exam duration at time of attempt creation
     )
     
@@ -144,14 +153,15 @@ def exam_portal(request, attempt_id):
     if attempt.is_submitted:
         return redirect('exam_results', attempt_id=attempt.id)
     
-    questions = exam.questions.filter(is_active=True).order_by('order')
-    
+    # Limit the questions returned to the attempt's total_questions (snapshot at creation time)
+    questions = exam.questions.filter(is_active=True).order_by('order')[:attempt.total_questions]
+
     context = {
         'attempt': attempt,
         'exam': exam,
         'course': course,
         'questions': questions,
-        'total_questions': questions.count(),
+        'total_questions': attempt.total_questions,
         'duration_minutes': exam.duration_minutes,
     }
     
@@ -168,7 +178,8 @@ def exam_get_questions(request, attempt_id):
     if attempt.is_submitted:
         return JsonResponse({'error': 'Exam already submitted'}, status=400)
     
-    questions = exam.questions.filter(is_active=True).order_by('order')
+    # Return only the subset of active questions assigned to this attempt
+    questions = exam.questions.filter(is_active=True).order_by('order')[:attempt.total_questions]
     
     # Fetch user's answers
     answers = ExamAnswer.objects.filter(attempt=attempt)
@@ -205,15 +216,18 @@ def exam_time_left(request, attempt_id):
     attempt = get_object_or_404(ExamAttempt, id=attempt_id, course_access__user=request.user)
 
     # If the attempt is already submitted, remaining is zero
+    exam = attempt.course_access.course.exam
+
     if attempt.is_submitted:
+        # Use snapshot number of questions stored on the attempt when possible
         meta = {
             'exam_active': exam.is_active,
             'exam_updated_at': (exam.updated_at.isoformat() if exam.updated_at else None),
         }
         qagg = exam.questions.aggregate(updated_at=Max('updated_at'), total=Count('id'))
         meta['questions_updated_at'] = (qagg.get('updated_at').isoformat() if qagg.get('updated_at') else None)
-        meta['questions_count'] = int(qagg.get('total') or 0)
-        meta['duration_minutes'] = exam.duration_minutes
+        meta['questions_count'] = int(attempt.total_questions or (qagg.get('total') or 0))
+        meta['duration_minutes'] = attempt.duration_minutes or exam.duration_minutes
         return JsonResponse({'remaining_seconds': 0, 'is_submitted': True, **meta})
 
     # Compute elapsed seconds since attempt started
@@ -236,8 +250,8 @@ def exam_time_left(request, attempt_id):
     }
     qagg = exam.questions.aggregate(updated_at=Max('updated_at'), total=Count('id'))
     meta['questions_updated_at'] = (qagg.get('updated_at').isoformat() if qagg.get('updated_at') else None)
-    meta['questions_count'] = int(qagg.get('total') or 0)
-    meta['duration_minutes'] = exam.duration_minutes
+    meta['questions_count'] = int(attempt.total_questions or (qagg.get('total') or 0))
+    meta['duration_minutes'] = attempt.duration_minutes or exam.duration_minutes
     return JsonResponse({'remaining_seconds': remaining, 'is_submitted': False, **meta})
 
 
@@ -313,7 +327,9 @@ def _finalize_and_grade_attempt(attempt):
     """
     exam = attempt.course_access.course.exam
     answers = ExamAnswer.objects.filter(attempt=attempt).select_related('question')
-    questions = exam.questions.filter(is_active=True)
+
+    # Only grade the subset of questions that were assigned to the attempt
+    questions = exam.questions.filter(is_active=True).order_by('order')[:attempt.total_questions]
 
     correct_count = 0
     for answer in answers:
@@ -323,7 +339,7 @@ def _finalize_and_grade_attempt(attempt):
         if is_correct:
             correct_count += 1
 
-    total = questions.count()
+    total = attempt.total_questions or questions.count()
     score_percentage = (correct_count / total * 100) if total > 0 else 0
     is_passed = score_percentage >= exam.passing_score
 

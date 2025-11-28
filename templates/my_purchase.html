@@ -84,6 +84,34 @@
     border-bottom: 2px solid #28a745;
     background: none;
 }
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15) !important;
+    transform: translateY(-2px);
+}
+
+.badge {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.6rem;
+}
+
+.btn-sm {
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.btn-sm:hover {
+    transform: scale(1.02);
+}
+
+.alert {
+    border-radius: 10px;
+}
+
 </style>
 {% endblock %}
 
@@ -154,10 +182,100 @@
 
         <div class="tab-pane fade {% if active_tab == 'achievements' %}show active{% endif %}" id="achievements">
             <div class="container">
-                <h2 class="mb-4">Certificates</h2>
-                <p class="text-muted">
-                    Once you've earned a Certificate of Achievement or Statement of Participation it will appear here.
-                </p>
+                <h2 class="mb-4">Achievements & Certificates</h2>
+                
+                <!-- DEBUG INFO (remove later) -->
+                <!-- exam_certificates count: {{ exam_certificates|length }} -->
+                
+                <!-- Exam Certificates Section (80%+ scores) -->
+                {% if exam_certificates and exam_certificates|length > 0 %}
+                <div class="mb-5">
+                    <h4 class="mb-3" style="color: #28a745; border-bottom: 2px solid #28a745; padding-bottom: 10px;">
+                        <i class="fas fa-award"></i> Exam Certificates
+                    </h4>
+                    <div class="row">
+                        {% for cert in exam_certificates %}
+                        <div class="col-12 col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 shadow-sm" style="border-left: 4px solid #28a745;">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0">{{ cert.course_name }}</h5>
+                                        <span class="badge bg-success">{{ cert.exam_score_percentage|floatformat:0 }}%</span>
+                                    </div>
+                                    <p class="text-muted small mb-2">Exam: {{ cert.exam_submitted_date|date:"M d, Y" }}</p>
+                                    
+                                    <div class="mb-3 small">
+                                        <p class="mb-1"><strong>Score:</strong> {{ cert.correct_answers }}/{{ cert.total_questions }} correct</p>
+                                        <p class="mb-1"><strong>Duration:</strong> {{ cert.exam_duration_taken_minutes }} minutes</p>
+                                        {% if cert.has_violations %}
+                                        <p class="mb-0"><strong class="text-warning">⚠ Violations detected:</strong> {{ cert.violation_count }}</p>
+                                        {% else %}
+                                        <p class="mb-0"><strong class="text-success">✓ Clean attempt</strong></p>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if cert.certificate_file.name %}
+                                    <a href="{% url 'download_exam_certificate' cert.id %}" class="btn btn-sm btn-success w-100">
+                                        <i class="fas fa-download"></i> Download Certificate
+                                    </a>
+                                    {% else %}
+                                    <div class="alert alert-info py-2 mb-0 small">
+                                        <i class="fas fa-hourglass-half"></i> Certificate pending upload by admin
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Course Completion Certificates Section -->
+                {% if certificates and certificates|length > 0 %}
+                <div class="mb-5">
+                    <h4 class="mb-3" style="color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+                        <i class="fas fa-certificate"></i> Course Certificates
+                    </h4>
+                    <div class="row">
+                        {% for cert in certificates %}
+                        <div class="col-12 col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 shadow-sm" style="border-left: 4px solid #007bff;">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-2">{{ cert.get_certificate_type_display }}</h5>
+                                    <p class="text-muted small mb-2">
+                                        <strong>Course:</strong> {{ cert.course_progress.course_access.course.name }}
+                                    </p>
+                                    <p class="text-muted small mb-3">
+                                        <strong>Issued:</strong> {{ cert.issue_date|date:"M d, Y" }}
+                                    </p>
+                                    
+                                    {% if cert.pdf_file %}
+                                    <a href="{{ cert.pdf_file.url }}" class="btn btn-sm btn-primary w-100" download>
+                                        <i class="fas fa-download"></i> Download Certificate
+                                    </a>
+                                    {% else %}
+                                    <div class="alert alert-warning py-2 mb-0 small">
+                                        <i class="fas fa-info-circle"></i> Certificate will be available soon
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- No Achievements Message -->
+                {% if not exam_certificates and not certificates %}
+                <div class="alert alert-info text-center py-5">
+                    <h5 class="alert-heading mb-3">
+                        <i class="fas fa-inbox" style="font-size: 2rem;"></i>
+                    </h5>
+                    <p class="mb-0">No certificates yet. Complete exams with 80%+ score to earn exam certificates!</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -728,6 +728,8 @@ class CourseExam(models.Model):
     duration_minutes = models.IntegerField(default=180, help_text='Exam duration in minutes (default 3 hours)')
     passing_score = models.IntegerField(default=80, help_text='Minimum percentage score to pass')
     max_attempts = models.IntegerField(default=3, help_text='Maximum number of attempts allowed')
+    # Number of questions to include in each user's attempt. If 0, include all active questions.
+    question_count = models.PositiveIntegerField(default=0, help_text='Number of questions per attempt (0 = use all active questions)')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -836,3 +838,83 @@ class ExamViolation(models.Model):
     
     def __str__(self):
         return f'{self.attempt} - {self.get_violation_type_display()} ({self.violation_count}x)'
+
+
+class ExamCertificate(models.Model):
+    """
+    Stores certificate records for students who scored 80% and above on exams.
+    Contains full student information, exam details, and certificate details.
+    """
+    # Link to exam attempt (the passing exam)
+    exam_attempt = models.OneToOneField(ExamAttempt, on_delete=models.CASCADE, related_name='certificate')
+    
+    # Student Information (denormalized for easy access)
+    student_name = models.CharField(max_length=200, help_text='Student full name')
+    student_email = models.EmailField(help_text='Student email address')
+    student_phone = models.CharField(max_length=20, blank=True, null=True, help_text='Student contact number')
+    
+    # Course Information
+    course_name = models.CharField(max_length=200, help_text='Course name')
+    course_duration_days = models.IntegerField(help_text='Total course duration in days')
+    course_duration_months = models.DecimalField(max_digits=5, decimal_places=2, help_text='Course duration converted to months')
+    
+    # Purchase/Enrollment Information
+    purchased_date = models.DateTimeField(help_text='Date when student enrolled/purchased the course')
+    joined_date = models.DateTimeField(help_text='Date when student joined/enrolled')
+    
+    # Exam Performance Details
+    exam_score_percentage = models.DecimalField(max_digits=5, decimal_places=2, help_text='Exam score percentage (80% or above)')
+    correct_answers = models.IntegerField(help_text='Number of correct answers')
+    total_questions = models.IntegerField(help_text='Total questions in exam')
+    exam_duration_taken_minutes = models.IntegerField(help_text='Time taken to complete exam in minutes')
+    exam_submitted_date = models.DateTimeField(help_text='Date and time of exam submission')
+    
+    # Violation Details
+    has_violations = models.BooleanField(default=False, help_text='Whether any violations were detected')
+    violation_count = models.IntegerField(default=0, help_text='Total number of violations recorded')
+    violation_details = models.TextField(blank=True, null=True, help_text='Details of violations in JSON format')
+    
+    # Certificate File
+    certificate_file = models.FileField(
+        upload_to='exam_certificates/%Y/%m/%d/',
+        blank=True,
+        null=True,
+        help_text='Uploaded certificate file (PDF/Image)'
+    )
+    certificate_uploaded_date = models.DateTimeField(blank=True, null=True, help_text='Date certificate was uploaded')
+    
+    # Admin Notes
+    admin_notes = models.TextField(blank=True, null=True, help_text='Admin notes or comments')
+    
+    # Metadata
+    is_active = models.BooleanField(default=True, help_text='Whether this certificate is active/valid')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Exam Certificate'
+        verbose_name_plural = 'Exam Certificates'
+        ordering = ['-exam_submitted_date']
+        indexes = [
+            models.Index(fields=['student_email']),
+            models.Index(fields=['is_active']),
+            models.Index(fields=['-exam_submitted_date']),
+        ]
+    
+    def __str__(self):
+        return f'{self.student_name} - {self.course_name} ({self.exam_score_percentage}%)'
+    
+    @property
+    def user(self):
+        """Get the related User object from exam_attempt"""
+        return self.exam_attempt.course_access.user
+    
+    def get_violation_list(self):
+        """Parse and return violation details as list"""
+        import json
+        if self.violation_details:
+            try:
+                return json.loads(self.violation_details)
+            except:
+                return []
+        return []

@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Exam Results{% endblock %}
+
+{% block extra_css %}
+<style>
+    .results-page-container {
+        max-width: 1000px;
+        margin: 60px auto;
+        padding: 20px;
+    }
+
+    .results-page-header {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    .results-page-header h2 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 10px;
+    }
+
+    .results-page-header p {
+        font-size: 1.1rem;
+        color: #666666;
+        margin: 0;
+    }
+
+    .no-attempts-container {
+        background: #dff3df;
+        border-left: 5px solid #22c55e;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .no-attempts-icon {
+        font-size: 3rem;
+        margin-bottom: 20px;
+    }
+
+    .no-attempts-message {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 15px;
+    }
+
+    .no-attempts-description {
+        font-size: 1rem;
+        color: #555555;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+
+    .no-attempts-btn {
+        display: inline-block;
+        padding: 14px 40px;
+        background-color: #22c55e;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1.05rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .no-attempts-btn:hover {
+        background-color: #16a34a;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+    }
+
+    .results-list {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .result-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-left: 5px solid #22c55e;
+        transition: all 0.3s ease;
+    }
+
+    .result-card:hover {
+        box-shadow: 0 6px 25px rgba(34, 197, 94, 0.15);
+        transform: translateY(-3px);
+    }
+
+    .result-card-info {
+        flex: 1;
+    }
+
+    .result-course-name {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+    }
+
+    .result-attempt-meta {
+        font-size: 0.95rem;
+        color: #666666;
+        margin: 0;
+    }
+
+    .result-card-stats {
+        display: flex;
+        gap: 30px;
+        align-items: center;
+        margin-left: 30px;
+    }
+
+    .stat-item {
+        text-align: right;
+    }
+
+    .stat-score {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #22c55e;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #999999;
+        font-weight: 500;
+    }
+
+    .result-view-btn {
+        display: inline-block;
+        padding: 10px 28px;
+        background-color: #22c55e;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+        margin-left: 20px;
+        white-space: nowrap;
+    }
+
+    .result-view-btn:hover {
+        background-color: #16a34a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    }
+
+    @media (max-width: 768px) {
+        .results-page-container {
+            margin: 40px auto;
+            padding: 15px;
+        }
+
+        .results-page-header h2 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .results-page-header p {
+            font-size: 0.95rem;
+        }
+
+        .no-attempts-container {
+            padding: 30px 20px;
+        }
+
+        .no-attempts-message {
+            font-size: 1.15rem;
+        }
+
+        .no-attempts-description {
+            font-size: 0.95rem;
+        }
+
+        .result-card {
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        .result-card-stats {
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-left: 0;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 120px;
+            text-align: left;
+        }
+
+        .result-view-btn {
+            margin-left: 0;
+            width: 100%;
+            text-align: center;
+            margin-top: 15px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .results-page-header h2 {
+            font-size: 1.75rem;
+        }
+
+        .no-attempts-icon {
+            font-size: 2.5rem;
+        }
+
+        .no-attempts-container {
+            padding: 25px 15px;
+        }
+
+        .no-attempts-message {
+            font-size: 1.1rem;
+        }
+
+        .result-card {
+            padding: 15px;
+        }
+
+        .result-course-name {
+            font-size: 1.1rem;
+        }
+
+        .stat-score {
+            font-size: 1.5rem;
+        }
+
+        .result-attempt-meta {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="results-page-container">
+    <div class="results-page-header">
+        <h2>My Exam Results</h2>
+        <p>Track your exam performance and progress</p>
+    </div>
+
+    {% if no_attempts_message %}
+        <div class="no-attempts-container">
+            <div class="no-attempts-icon">📚</div>
+            <div class="no-attempts-message">{{ no_attempts_message }}</div>
+            <div class="no-attempts-description">
+                Complete all course videos to unlock the exam and test your knowledge.
+            </div>
+            <a href="{% url 'my-purchase' %}" class="no-attempts-btn">
+                <i class="fas fa-arrow-right" style="margin-right: 8px;"></i>Go to My Courses
+            </a>
+        </div>
+    {% else %}
+        <div class="results-list">
+            {% for attempt in attempts %}
+            <div class="result-card">
+                <div class="result-card-info">
+                    <div class="result-course-name">{{ attempt.course_access.course.name }}</div>
+                    <p class="result-attempt-meta">
+                        <i class="fas fa-bookmark" style="margin-right: 6px; color: #22c55e;"></i>
+                        Attempt #{{ attempt.attempt_number }} — {{ attempt.submitted_at|date:"M d, Y \a\t g:i A" }}
+                    </p>
+                </div>
+                <div class="result-card-stats">
+                    <div class="stat-item">
+                        <div class="stat-score">{{ attempt.score_percentage|floatformat:0 }}%</div>
+                        <div class="stat-label">Score</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-score" style="color: #6b7280; font-size: 1.5rem;">{{ attempt.correct_answers }} / {{ attempt.total_questions }}</div>
+                        <div class="stat-label">Correct</div>
+                    </div>
+                </div>
+                <a href="{% url 'exam_results' attempt.id %}" class="result-view-btn">
+                    <i class="fas fa-eye" style="margin-right: 6px;"></i>View Results
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

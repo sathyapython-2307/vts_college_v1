@@ -20,7 +20,7 @@ import logging
 from .models import (
     AboutPage, AboutSection, Course, CourseBrochure, CourseScheduleDay,
     CourseScheduleItem, CourseAccess, CourseProgress, CoursePayment,
-    CourseExam, ExamAttempt, Certificate
+    CourseExam, ExamAttempt, Certificate, ExamCertificate
 )
 
 # Also import VideoPlay model for play tracking
@@ -180,7 +180,52 @@ def my_purchase(request):
         'active_tab': 'courses',
     }
 
+    # Include certificates for the logged-in user so the Achievements tab
+    # can show either a pending message or a download button when available.
+    try:
+        certificates = Certificate.objects.filter(
+            course_progress__course_access__user=request.user
+        ).select_related('course_progress__course_access__course')
+    except Exception:
+        certificates = []
+    
+    # Include exam certificates for students who scored 80%+
+    try:
+        exam_certificates = ExamCertificate.objects.filter(
+            exam_attempt__course_access__user=request.user,
+            is_active=True
+        ).select_related('exam_attempt__course_access__course').order_by('-exam_submitted_date')
+    except Exception:
+        exam_certificates = []
+
+    context['certificates'] = certificates
+    context['exam_certificates'] = exam_certificates
+
     return render(request, 'my_purchase.html', context)
+
+
+@login_required
+def my_results(request):
+    """Show a user's submitted exam attempts and links to detailed results.
+
+    If the user has not attended any exams (no submitted attempts), show
+    a friendly prompt asking them to watch course videos and take the exam.
+    """
+    from .models import ExamAttempt
+
+    attempts = ExamAttempt.objects.filter(course_access__user=request.user, is_submitted=True).select_related('course_access__course').order_by('-submitted_at')
+
+    if not attempts.exists():
+        # Friendly prompt when no submitted attempts are found
+        return render(request, 'my_results.html', {
+            'attempts': [],
+            'no_attempts_message': 'Kindly see all videos and attend exam to view results.'
+        })
+
+    return render(request, 'my_results.html', {
+        'attempts': attempts,
+        'no_attempts_message': None,
+    })
 
 def testimonials(request):
     return render(request, 'testimonials.html')
@@ -944,3 +989,33 @@ def payment_debug(request):
     except Exception as e:
         resp['razorpay_config'] = {'loaded': False, 'error': str(e)}
     return JsonResponse(resp)
+
+
+@login_required
+def download_exam_certificate(request, certificate_id):
+    """
+    Allow logged-in users to download their exam certificates.
+    Only the certificate owner or admin can download.
+    """
+    certificate = get_object_or_404(ExamCertificate, id=certificate_id, is_active=True)
+    
+    # Check if user is the certificate owner or is admin
+    if certificate.exam_attempt.course_access.user != request.user and not request.user.is_staff:
+        messages.error(request, 'You do not have permission to download this certificate.')
+        return redirect('my-purchase')
+    
+    # Check if certificate file exists
+    if not certificate.certificate_file:
+        messages.error(request, 'Certificate file is not available yet.')
+        return redirect('my-purchase')
+    
+    try:
+        return FileResponse(
+            certificate.certificate_file.open('rb'),
+            as_attachment=True,
+            filename=f"{certificate.student_name.replace(' ', '_')}_certificate_{certificate.id}.pdf"
+        )
+    except Exception as e:
+        logger.error(f"Error downloading certificate {certificate_id}: {str(e)}")
+        messages.error(request, 'Error downloading certificate.')
+        return redirect('my-purchase')

@@ -19,6 +19,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('profile/', views.profile, name='profile'),
+    path('my-results/', views.my_results, name='my-results'),
     path('my-purchase/', views.my_purchase, name='my-purchase'),
     path('settings/', views.settings, name='settings'),
     path('about/', views.about, name='about'),
@@ -41,4 +42,7 @@ urlpatterns = [
     path('exam/<int:attempt_id>/submit/', exam_views.exam_submit, name='exam_submit'),
     path('exam/<int:attempt_id>/results/', exam_views.exam_results, name='exam_results'),
     path('course/<int:course_id>/exam/remind-later/', exam_views.exam_remind_later, name='exam_remind_later'),
+    
+    # Certificate URLs
+    path('certificate/<int:certificate_id>/download/', views.download_exam_certificate, name='download_exam_certificate'),
 ]

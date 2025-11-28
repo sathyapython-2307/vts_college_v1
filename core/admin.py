@@ -3,14 +3,19 @@ from django.contrib import admin
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Max
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.html import format_html
+from django.urls import path
+from django.shortcuts import render, redirect, get_object_or_404
 import csv
 import io
 from collections import defaultdict
+import json
+from datetime import datetime
 from .models import (
     CourseFeature, CourseOverview, CourseSkill, CourseTool, CourseBrochure,
-    CoursePayment, CourseAccess, CourseExam, ExamQuestion, ExamAttempt, ExamAnswer, ExamViolation
+    CoursePayment, CourseAccess, CourseExam, ExamQuestion, ExamAttempt, ExamAnswer, ExamViolation,
+    ExamCertificate
 )
 from .models_brochure import BrochureDownload
 from .admin_brochure import BrochureDownloadAdmin
@@ -61,7 +66,7 @@ from django.contrib import admin
 from .models import (
     Section, Content, HeroBanner, AboutPage, AboutSection, 
     FeatureCard, HomeAboutSection, CourseCategory, CourseBrowser,
-    LearningBanner, WhyChoose, WhyChooseItem, CertificateSection,
+    LearningBanner, WhyChoose, WhyChooseItem,
     FAQQuestion, TestimonialStrip, Course, CourseInstructor
     , CourseLocalInstructor
 )
@@ -269,18 +274,7 @@ class HomeAboutSectionAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(CertificateSection)
-class CertificateSectionAdmin(admin.ModelAdmin):
-    list_display = ('title', 'is_active', 'updated_at')
-    list_filter = ('is_active',)
-    search_fields = ('title', 'subtitle')
-    list_editable = ('is_active',)
-    fieldsets = (
-        (None, {'fields': ('title', 'subtitle', 'image', 'is_active')}),
-    )
-
-    def save_model(self, request, obj, form, change):
-        super().save_model(request, obj, form, change)
+# CertificateSection has been removed from admin per product request.
 
 
 @admin.register(FAQQuestion)
@@ -739,22 +733,22 @@ class CourseExamAdmin(admin.ModelAdmin):
     list_display = ('course', 'duration_minutes', 'passing_score', 'max_attempts', 'question_count', 'is_active', 'updated_at')
     list_filter = ('is_active',)
     search_fields = ('course__name',)
-    list_editable = ('duration_minutes', 'passing_score', 'max_attempts', 'is_active')
+    list_editable = ('duration_minutes', 'passing_score', 'max_attempts', 'question_count', 'is_active')
     inlines = [ExamQuestionInline]
     fieldsets = (
         (None, {'fields': ('course', 'title', 'description')}),
         ('Exam Settings', {
-            'fields': ('duration_minutes', 'passing_score', 'max_attempts', 'is_active'),
+            'fields': ('duration_minutes', 'passing_score', 'max_attempts', 'question_count', 'is_active'),
             'description': 'Configure exam duration (minutes), passing score (%), max attempts, and active status.'
         }),
     )
     readonly_fields = ('updated_at',)
 
-    def question_count(self, obj):
+    def active_question_count(self, obj):
         """Display the number of active questions in the exam."""
         count = obj.questions.filter(is_active=True).count()
         return format_html('<strong>{}</strong> questions', count)
-    question_count.short_description = 'Questions'
+    active_question_count.short_description = 'Questions'
 
     def get_urls(self):
         """Add custom bulk Q&A upload endpoint."""
@@ -948,3 +942,360 @@ class ExamViolationAdmin(admin.ModelAdmin):
     
     def has_change_permission(self, request, obj=None):
         return False
+
+
+# =============== EXAM CERTIFICATE ADMIN ===============
+
+class CertificateFileFilter(admin.SimpleListFilter):
+    """Custom filter for certificate file upload status"""
+    title = 'Certificate File Status'
+    parameter_name = 'cert_file_status'
+    
+    def lookups(self, request, model_admin):
+        return [
+            ('uploaded', 'Uploaded'),
+            ('pending', 'Pending Upload'),
+        ]
+    
+    def queryset(self, request, queryset):
+        if self.value() == 'uploaded':
+            return queryset.exclude(certificate_file='')
+        elif self.value() == 'pending':
+            return queryset.filter(certificate_file='')
+        return queryset
+
+
+class CertificateUploadForm(forms.ModelForm):
+    """Custom form for certificate upload with validation"""
+    class Meta:
+        model = ExamCertificate
+        fields = ['certificate_file', 'admin_notes']
+        widgets = {
+            'admin_notes': forms.Textarea(attrs={'rows': 4, 'placeholder': 'Add any notes about this certificate...'}),
+            'certificate_file': forms.FileInput(attrs={'accept': '.pdf,.jpg,.jpeg,.png'})
+        }
+
+
+@admin.register(ExamCertificate)
+class ExamCertificateAdmin(admin.ModelAdmin):
+    """Admin interface for managing Exam Certificates for 80%+ passing students"""
+    
+    list_display = (
+        'student_name_link',
+        'course_name',
+        'exam_score_percentage',
+        'student_email',
+        'exam_submitted_date',
+        'certificate_status',
+        'is_active_display'
+    )
+    
+    list_filter = (
+        'is_active',
+        'has_violations',
+        'exam_submitted_date',
+        CertificateFileFilter,
+    )
+    
+    search_fields = (
+        'student_name',
+        'student_email',
+        'course_name',
+    )
+    
+    readonly_fields = (
+        'exam_attempt',
+        'student_name',
+        'student_email',
+        'student_phone',
+        'course_name',
+        'course_duration_days',
+        'course_duration_months',
+        'purchased_date',
+        'joined_date',
+        'exam_score_percentage',
+        'correct_answers',
+        'total_questions',
+        'exam_duration_taken_minutes',
+        'exam_submitted_date',
+        'has_violations',
+        'violation_count',
+        'violation_details',
+        'created_at',
+        'updated_at',
+        'certificate_preview',
+    )
+    
+    fieldsets = (
+        ('Student Information', {
+            'fields': (
+                'student_name',
+                'student_email',
+                'student_phone',
+            )
+        }),
+        ('Course Information', {
+            'fields': (
+                'course_name',
+                'course_duration_days',
+                'course_duration_months',
+                'purchased_date',
+                'joined_date',
+            )
+        }),
+        ('Exam Performance', {
+            'fields': (
+                'exam_score_percentage',
+                'correct_answers',
+                'total_questions',
+                'exam_duration_taken_minutes',
+                'exam_submitted_date',
+            )
+        }),
+        ('Security & Violations', {
+            'fields': (
+                'has_violations',
+                'violation_count',
+                'violation_details',
+            ),
+            'classes': ('collapse',)
+        }),
+        ('Certificate', {
+            'fields': (
+                'certificate_file',
+                'certificate_preview',
+                'certificate_uploaded_date',
+            )
+        }),
+        ('Admin', {
+            'fields': (
+                'admin_notes',
+                'is_active',
+            )
+        }),
+        ('Metadata', {
+            'fields': (
+                'exam_attempt',
+                'created_at',
+                'updated_at',
+            ),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    form = CertificateUploadForm
+    
+    actions = [
+        'download_single_excel',
+        'download_bulk_excel',
+        'mark_as_active',
+        'mark_as_inactive',
+    ]
+    
+    def get_urls(self):
+        """Add custom admin URLs"""
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'download-excel/<int:certificate_id>/',
+                self.admin_site.admin_view(self.download_single_excel_view),
+                name='exam_certificate_download_single',
+            ),
+            path(
+                'download-bulk-excel/',
+                self.admin_site.admin_view(self.download_bulk_excel_view),
+                name='exam_certificate_download_bulk',
+            ),
+        ]
+        return custom_urls + urls
+    
+    def student_name_link(self, obj):
+        """Display student name as a link to the detail page"""
+        return format_html(
+            '<a href="{}">{}</a>',
+            f'/admin/core/examcertificate/{obj.id}/change/',
+            obj.student_name
+        )
+    student_name_link.short_description = 'Student Name'
+    
+    def certificate_status(self, obj):
+        """Display certificate upload status with visual indicator"""
+        if obj.certificate_file:
+            return format_html(
+                '<span style="color: green; font-weight: bold;">✓ Uploaded</span>'
+            )
+        return format_html(
+            '<span style="color: orange; font-weight: bold;">⏳ Pending</span>'
+        )
+    certificate_status.short_description = 'Certificate Status'
+    
+    def is_active_display(self, obj):
+        """Display active status with visual indicator"""
+        if obj.is_active:
+            return format_html(
+                '<span style="color: green; font-weight: bold;">Active</span>'
+            )
+        return format_html(
+            '<span style="color: red; font-weight: bold;">Inactive</span>'
+        )
+    is_active_display.short_description = 'Status'
+    
+    def certificate_preview(self, obj):
+        """Show preview of uploaded certificate"""
+        if obj.certificate_file:
+            file_url = obj.certificate_file.url
+            file_name = obj.certificate_file.name.split('/')[-1]
+            return format_html(
+                '<a href="{}" target="_blank" style="color: #417690; text-decoration: underline;">Download: {}</a>',
+                file_url,
+                file_name
+            )
+        return format_html(
+            '<span style="color: #999;">No certificate uploaded</span>'
+        )
+    certificate_preview.short_description = 'Certificate File'
+    
+    def mark_as_active(self, request, queryset):
+        """Bulk action to mark certificates as active"""
+        updated = queryset.update(is_active=True)
+        self.message_user(
+            request,
+            f'{updated} certificate(s) marked as active.',
+            messages.SUCCESS
+        )
+    mark_as_active.short_description = 'Mark selected as active'
+    
+    def mark_as_inactive(self, request, queryset):
+        """Bulk action to mark certificates as inactive"""
+        updated = queryset.update(is_active=False)
+        self.message_user(
+            request,
+            f'{updated} certificate(s) marked as inactive.',
+            messages.ERROR
+        )
+    mark_as_inactive.short_description = 'Mark selected as inactive'
+    
+    def download_single_excel_view(self, request, certificate_id):
+        """Download a single certificate's details as Excel"""
+        try:
+            certificate = ExamCertificate.objects.get(id=certificate_id)
+            return self._generate_excel_response(
+                [certificate],
+                f"{certificate.student_name.replace(' ', '_')}_certificate.xlsx"
+            )
+        except ExamCertificate.DoesNotExist:
+            self.message_user(request, 'Certificate not found.', messages.ERROR)
+            return redirect('..')
+    
+    def download_bulk_excel_view(self, request):
+        """Download all certificates' details as Excel"""
+        certificates = ExamCertificate.objects.filter(is_active=True).order_by('-exam_submitted_date')
+        return self._generate_excel_response(
+            certificates,
+            f"exam_certificates_bulk_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        )
+    
+    def download_single_excel(self, request, queryset):
+        """Admin action to download single certificate"""
+        if queryset.count() == 1:
+            certificate = queryset.first()
+            return self._generate_excel_response(
+                [certificate],
+                f"{certificate.student_name.replace(' ', '_')}_certificate.xlsx"
+            )
+        else:
+            self.message_user(
+                request,
+                'Please select exactly one certificate to download.',
+                messages.WARNING
+            )
+    download_single_excel.short_description = 'Download selected as Excel'
+    
+    def download_bulk_excel(self, request, queryset):
+        """Admin action to download multiple certificates"""
+        return self._generate_excel_response(
+            queryset,
+            f"exam_certificates_bulk_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        )
+    download_bulk_excel.short_description = 'Download selected as bulk Excel'
+    
+    def _generate_excel_response(self, certificates, filename):
+        """Generate and return Excel response with certificate data"""
+        try:
+            import pandas as pd
+        except ImportError:
+            return HttpResponse(
+                'pandas library not installed',
+                content_type='text/plain',
+                status=500
+            )
+        
+        # Prepare data for Excel
+        data = []
+        for cert in certificates:
+            violations = cert.get_violation_list()
+            violation_summary = ', '.join([v.get('type', 'Unknown') for v in violations]) if violations else 'None'
+            
+            data.append({
+                'Student Name': cert.student_name,
+                'Email': cert.student_email,
+                'Phone': cert.student_phone or 'N/A',
+                'Course Name': cert.course_name,
+                'Course Duration (Days)': cert.course_duration_days,
+                'Course Duration (Months)': cert.course_duration_months,
+                'Purchased Date': cert.purchased_date.strftime('%Y-%m-%d %H:%M:%S') if cert.purchased_date else '',
+                'Joined Date': cert.joined_date.strftime('%Y-%m-%d %H:%M:%S') if cert.joined_date else '',
+                'Exam Score (%)': cert.exam_score_percentage,
+                'Correct Answers': cert.correct_answers,
+                'Total Questions': cert.total_questions,
+                'Exam Duration (Minutes)': cert.exam_duration_taken_minutes,
+                'Exam Submitted Date': cert.exam_submitted_date.strftime('%Y-%m-%d %H:%M:%S') if cert.exam_submitted_date else '',
+                'Has Violations': 'Yes' if cert.has_violations else 'No',
+                'Violation Count': cert.violation_count,
+                'Violation Details': violation_summary,
+                'Certificate Status': 'Uploaded' if cert.certificate_file else 'Pending',
+                'Admin Notes': cert.admin_notes or '',
+            })
+        
+        # Create DataFrame
+        df = pd.DataFrame(data)
+        
+        # Generate Excel file
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        # Write to Excel
+        with pd.ExcelWriter(response, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Certificates', index=False)
+            
+            # Auto-adjust column widths
+            worksheet = writer.sheets['Certificates']
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        return response
+    
+    def has_add_permission(self, request):
+        """Prevent manual creation; certificates are auto-generated from exam attempts"""
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        """Prevent deletion of certificate records"""
+        return False
+    
+    def save_model(self, request, obj, form, change):
+        """Override save to track certificate upload date"""
+        if change and 'certificate_file' in form.changed_data:
+            obj.certificate_uploaded_date = datetime.now()
+        super().save_model(request, obj, form, change)
